@@ -1,0 +1,121 @@
+name: Update ChatGPT cask
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: update-chatgpt
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+        with:
+          ref: main
+
+      - name: Read official metadata and update the cask
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          from urllib.request import urlopen
+
+          base_url = "https://persistent.oaistatic.com/codex-app-prod/linux/deb"
+          packages = {}
+          for arch in ("amd64", "arm64"):
+              url = f"{base_url}/dists/stable/main/binary-{arch}/Packages"
+              with urlopen(url, timeout=30) as response:
+                  index = response.read().decode("utf-8")
+              candidates = []
+              for stanza in re.split(r"\n\s*\n", index.strip()):
+                  fields = dict(
+                      line.split(": ", 1) for line in stanza.splitlines()
+                      if ": " in line and not line[0].isspace()
+                  )
+                  if fields.get("Package") != "chatgpt":
+                      continue
+                  version = fields.get("Version", "")
+                  if not re.fullmatch(r"\d+(?:\.\d+)+", version):
+                      raise ValueError(f"Unexpected upstream version: {version!r}")
+                  candidates.append(fields)
+              if not candidates:
+                  raise ValueError(f"No ChatGPT package found for {arch}")
+              package = max(candidates, key=lambda p: tuple(map(int, p["Version"].split("."))))
+              version = package["Version"]
+              if package.get("Architecture") != arch:
+                  raise ValueError(f"Unexpected architecture for {arch}")
+              if package.get("Filename") != f"pool/main/c/chatgpt/chatgpt_{version}_{arch}.deb":
+                  raise ValueError(f"Unexpected package filename for {arch}")
+              if not re.fullmatch(r"[0-9a-f]{64}", package.get("SHA256", "")):
+                  raise ValueError(f"Invalid checksum for {arch}")
+              packages[arch] = package
+
+          version = packages["amd64"]["Version"]
+          if version != packages["arm64"]["Version"]:
+              raise ValueError("Architecture versions differ; wait for upstream to finish publishing")
+
+          cask_path = Path("Casks/chatgpt-linux.rb")
+          original = cask_path.read_text()
+          current = re.search(r'^  version "([^"]+)"$', original, re.MULTILINE)
+          if not current:
+              raise ValueError("Cask version stanza is missing")
+          if tuple(map(int, version.split("."))) < tuple(map(int, current[1].split("."))):
+              raise ValueError("Refusing to downgrade the cask")
+
+          updated = original
+          replacements = [
+              (r'^  version "[^"]+"$', f'  version "{version}"'),
+              (r'^  sha256 arm64_linux:  "[0-9a-f]{64}",$',
+               f'  sha256 arm64_linux:  "{packages["arm64"]["SHA256"]}",'),
+              (r'^         x86_64_linux: "[0-9a-f]{64}"$',
+               f'         x86_64_linux: "{packages["amd64"]["SHA256"]}"'),
+          ]
+          for pattern, replacement in replacements:
+              updated, count = re.subn(pattern, replacement, updated, flags=re.MULTILINE)
+              if count != 1:
+                  raise ValueError(f"Expected exactly one cask stanza: {pattern}")
+          if updated != original:
+              cask_path.write_text(updated)
+              print(f"Updated ChatGPT {current[1]} -> {version}")
+          else:
+              print(f"ChatGPT is current at {version}")
+          PY
+
+      - name: Open update pull request
+        id: pull-request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.0.0
+        with:
+          add-paths: Casks/chatgpt-linux.rb
+          branch: automation/update-chatgpt
+          commit-message: "chatgpt-linux: update official package metadata"
+          title: "chatgpt-linux: update official package metadata"
+          body: |
+            Update the version and both architecture checksums from OpenAI's
+            official Linux package indexes. Downloads remain on OpenAI's origin.
+
+            Review the metadata diff and both architecture installation checks
+            before merging. No application binaries are built or mirrored.
+
+      # GITHUB_TOKEN-created PR runs can need human approval. An explicit
+      # workflow_dispatch starts validation without a separate access token.
+      - name: Dispatch installation checks for the update branch
+        if: >-
+          steps.pull-request.outputs.pull-request-number &&
+          (steps.pull-request.outputs.pull-request-operation == 'created' ||
+           steps.pull-request.outputs.pull-request-operation == 'updated')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run validate.yml --ref automation/update-chatgpt
