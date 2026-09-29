@@ -1,0 +1,63 @@
+name: Validate ChatGPT cask
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-chatgpt-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+jobs:
+  install:
+    name: Install (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    steps:
+      # This action checks out GITHUB_SHA into the Homebrew tap itself.
+      - name: Set up Homebrew and the tap checkout
+        uses: Homebrew/actions/setup-homebrew@848c272c7bfe984a197bd4d16383f4c106ec61e6 # 2026.09.21.1
+
+      - name: Check syntax, style, and audit
+        run: |
+          brew readall --aliases --os=all --arch=all chakachakakhan/tap
+          brew style Casks/chatgpt-linux.rb
+          brew audit --cask --new --strict chakachakakhan/tap/chatgpt-linux
+
+      - name: Install official package and check integration
+        run: |
+          brew install --cask chakachakakhan/tap/chatgpt-linux
+          version="$(sed -n 's/^  version "\([^"]*\)"$/\1/p' Casks/chatgpt-linux.rb)"
+          version_root="$(brew --caskroom chakachakakhan/tap/chatgpt-linux)/$version"
+          test -x "$(brew --prefix)/bin/chatgpt"
+          "$version_root/usr/lib/chatgpt/resources/codex" --version
+          test -s "$HOME/.local/share/icons/chatgpt.png"
+          test -s "$HOME/.local/share/metainfo/com.openai.chatgpt.metainfo.xml"
+          grep -Fx "Exec=$(brew --prefix)/bin/chatgpt %U" \
+            "$HOME/.local/share/applications/chatgpt.desktop"
+          grep -Fx 'Icon=chatgpt' "$HOME/.local/share/applications/chatgpt.desktop"
+
+      - name: Check uninstall cleanup
+        run: |
+          brew uninstall --cask chakachakakhan/tap/chatgpt-linux
+          for artifact in \
+            "$(brew --prefix)/bin/chatgpt" \
+            "$HOME/.local/share/applications/chatgpt.desktop" \
+            "$HOME/.local/share/icons/chatgpt.png" \
+            "$HOME/.local/share/metainfo/com.openai.chatgpt.metainfo.xml"; do
+            test ! -e "$artifact"
+            test ! -L "$artifact"
+          done
