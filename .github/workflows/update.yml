@@ -8,7 +8,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: update-chatgpt
+  group: update-casks
   cancel-in-progress: false
 
 jobs:

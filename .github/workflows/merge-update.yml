@@ -1,15 +1,15 @@
-name: Merge validated ChatGPT update
+name: Merge validated cask update
 
 on:
   workflow_run:
-    workflows: [Validate ChatGPT cask]
-    branches: [automation/update-chatgpt]
+    workflows: [Validate Linux casks]
+    branches: [automation/update-chatgpt, automation/update-thorium-reader]
     types: [completed]
 
 permissions: {}
 
 concurrency:
-  group: update-chatgpt
+  group: update-casks
   cancel-in-progress: false
 
 jobs:

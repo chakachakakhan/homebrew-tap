@@ -7,8 +7,10 @@ import re
 import subprocess
 from pathlib import Path
 
-BRANCH = "automation/update-chatgpt"
-CASK = "Casks/chatgpt-linux.rb"
+UPDATE_CASKS = {
+    "automation/update-chatgpt": "Casks/chatgpt-linux.rb",
+    "automation/update-thorium-reader": "Casks/thorium-reader-linux.rb",
+}
 REQUIRED_JOBS = {
     "Install (ubuntu-24.04)",
     "Install (ubuntu-24.04-arm)",
@@ -49,8 +51,10 @@ def metadata_only(before, after):
 
 
 def merge_update(repo, run, request=api):
+    branch = run["head_branch"]
+    cask = UPDATE_CASKS.get(branch)
     if (run["event"] != "workflow_dispatch"
-            or run["head_branch"] != BRANCH
+            or cask is None
             or run["head_repository"]["full_name"] != repo
             or run["path"] != ".github/workflows/validate.yml"):
         print("This run is outside the automatic update policy.")
@@ -67,7 +71,7 @@ def merge_update(repo, run, request=api):
         raise ValueError("Both installations and the automation policy tests must pass")
 
     owner = repo.split("/")[0]
-    prs = request(f"{prefix}/pulls?state=open&base=main&head={owner}:{BRANCH}")
+    prs = request(f"{prefix}/pulls?state=open&base=main&head={owner}:{branch}")
     if not prs:
         print("No open update PR; it may already have been merged.")
         return False
@@ -78,7 +82,7 @@ def merge_update(repo, run, request=api):
             or pr["state"] != "open" or pr["base"]["ref"] != "main"
             or pr["base"]["repo"]["full_name"] != repo
             or pr["head"]["repo"]["full_name"] != repo
-            or pr["head"]["ref"] != BRANCH):
+            or pr["head"]["ref"] != branch):
         raise ValueError("Only the same-repository bot update PR can merge automatically")
     sha = pr["head"]["sha"]
     if sha != run["head_sha"]:
@@ -91,12 +95,12 @@ def merge_update(repo, run, request=api):
         return False
     files = comparison["files"]
     if pr["changed_files"] != 1 or len(files) != 1 or (
-        files[0]["filename"] != CASK or files[0]["status"] != "modified"
+        files[0]["filename"] != cask or files[0]["status"] != "modified"
     ):
-        raise ValueError("The update must modify only the existing ChatGPT cask")
+        raise ValueError("The update must modify only the existing cask assigned to its branch")
 
     def content(ref):
-        file = request(f"{prefix}/contents/{CASK}?ref={ref}")
+        file = request(f"{prefix}/contents/{cask}?ref={ref}")
         if file["encoding"] != "base64":
             raise ValueError("Unexpected GitHub file encoding")
         return base64.b64decode(file["content"]).decode("utf-8")
