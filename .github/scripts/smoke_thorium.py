@@ -23,18 +23,30 @@ with tempfile.TemporaryDirectory(prefix="thorium-smoke-") as directory:
                     raise RuntimeError(f"Thorium exited before opening a window: {process.returncode}")
                 windows = subprocess.check_output(["xwininfo", "-root", "-tree"], text=True)
                 if '"Thorium"' in windows or '"Thorium Reader"' in windows:
+                    # Catch crashes immediately after window creation too.
+                    time.sleep(5)
+                    windows = subprocess.check_output(["xwininfo", "-root", "-tree"], text=True)
+                    if process.poll() is not None or not (
+                        '"Thorium"' in windows or '"Thorium Reader"' in windows
+                    ):
+                        raise RuntimeError("Thorium exited or closed its window after startup")
                     print("Installed Thorium Reader opened its desktop window")
                     break
                 time.sleep(1)
             else:
                 raise RuntimeError("Thorium did not open a window within 60 seconds")
         finally:
+            # Capture launch diagnostics before our shutdown affects child processes.
+            log.seek(0)
+            print(log.read())
             if process.poll() is None:
-                os.killpg(process.pid, signal.SIGTERM)
+                process.terminate()
                 try:
                     process.wait(timeout=10)
                 except subprocess.TimeoutExpired:
                     os.killpg(process.pid, signal.SIGKILL)
                     process.wait()
-            log.seek(0)
-            print(log.read())
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass

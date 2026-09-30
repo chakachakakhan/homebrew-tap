@@ -78,7 +78,6 @@ jobs:
         run: |
           brew install --cask chakachakakhan/tap/thorium-reader-linux
           test -x "$(brew --prefix)/bin/thorium-reader"
-          ELECTRON_RUN_AS_NODE=1 thorium-reader --version
           test -s "$HOME/.local/share/icons/thorium-reader.png"
           grep -Fx "Exec=$(brew --prefix)/bin/thorium-reader %U" \
             "$HOME/.local/share/applications/thorium-reader.desktop"

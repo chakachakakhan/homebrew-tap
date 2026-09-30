@@ -2,6 +2,7 @@
 
 [![Installation checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate.yml)
 [![Update checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update.yml)
+[![Thorium update checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update-thorium.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update-thorium.yml)
 
 My personal Homebrew tap for ChatGPT and EDRLab's Thorium Reader on Linux.
 I made it after the ChatGPT tap I was using stopped getting updates, and wanted
@@ -32,8 +33,8 @@ the upstream ebook and OPDS link associations. It is distinct from the Thorium
 web browser.
 
 These are native desktop installations, with no Flatpak sandbox or permission
-portal. Thorium’s upstream launcher uses Electron’s sandbox when user namespaces
-are available and falls back to `--no-sandbox` when they are unavailable.
+portal. Thorium’s upstream launcher adds `--no-sandbox` when its user-namespace
+probe fails; the tap preserves that upstream behavior.
 
 ## Update
 
@@ -69,7 +70,7 @@ or check the [latest workflow runs](https://github.com/chakachakakhan/homebrew-t
 
 Normal upgrades and uninstalls preserve your app data, including Thorium’s
 book library in `~/.config/EDRLab.ThoriumReader` (or the corresponding directory
-under a custom `XDG_CONFIG_HOME`). Moving from the
+under a custom `XDG_CONFIG_HOME`). For ChatGPT, moving from the
 `ublue/experimental-tap` cask preserved my projects and settings, though that
 is my experience rather than a guarantee for every setup.
 

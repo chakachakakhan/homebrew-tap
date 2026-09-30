@@ -2,8 +2,8 @@
 
 ## Release checks and validation
 
-The ChatGPT updater reads OpenAI's official stable Debian indexes every six hours. It
-waits for matching Intel and ARM versions, rejects downgrades, and opens one
+The ChatGPT updater reads OpenAI's official stable Debian indexes every six hours.
+It waits for matching Intel and ARM versions, rejects downgrades, and opens one
 update PR with the new version and SHA-256 checksums. The repository owner is
 requested as a reviewer, which uses GitHub's participating notification settings.
 
@@ -22,7 +22,8 @@ Unchanged open PRs are rechecked so temporary download or runner failures recove
 After successful validation, a separate workflow from the trusted default branch
 merges the exact tested commit. It accepts only a bot-authored PR from this tap,
 on `automation/update-chatgpt` or `automation/update-thorium-reader`,
-with only the existing cask assigned to that branch changed and only its version and checksum fields modified.
+with only the existing cask assigned to that branch changed and only its version
+and checksum fields modified.
 The version must increase. Same-version package rebuilds, application integration
 changes, and workflow changes need manual review. Stale validation cannot merge
 a newer revision; an update must also include the current main branch.
@@ -39,7 +40,8 @@ python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
 
 A monthly empty commit on `automation/keepalive` prevents GitHub from disabling
 scheduled workflows after 60 days of repository inactivity. It does not change
-the cask or main branch. Both updaters and the merger share a concurrency group to avoid overlapping
+the cask or main branch. Both updaters and the merger share a concurrency group
+to avoid overlapping
 branch updates and merges. The ChatGPT workflow maintains the shared keepalive
 branch; if it is disabled, keepalive must be moved to the remaining updater.
 
@@ -56,8 +58,9 @@ update changes that cask in a PR; the merged PR and Git history record the updat
 Homebrew reads the tap's Git repository, so publishing a GitHub Release is not
 required to make an update available.
 
-GitHub Packages is not used. App binaries stay at their upstream origins: OpenAI’s package server for ChatGPT
-and EDRLab’s GitHub Releases for Thorium. All tap validation and release checks
+GitHub Packages is not used. App binaries stay at their upstream origins:
+OpenAI’s package server for ChatGPT and EDRLab’s GitHub Releases for Thorium.
+All tap validation and release checks
 run on GitHub-hosted Ubuntu Intel and ARM runners. No tap-side application
 compilation or binary mirroring is needed. GitHub
 Releases could be added later for release announcements and tagged snapshots of
