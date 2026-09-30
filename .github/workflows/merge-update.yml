@@ -1,0 +1,36 @@
+name: Merge validated ChatGPT update
+
+on:
+  workflow_run:
+    workflows: [Validate ChatGPT cask]
+    branches: [automation/update-chatgpt]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: update-chatgpt
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    if: >-
+      github.event.workflow_run.event == 'workflow_dispatch' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    steps:
+      # Only load trusted policy from main. Never check out or execute PR code here.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - name: Merge only the exact metadata update that passed validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: python3 .github/scripts/merge_update.py

@@ -102,23 +102,47 @@ jobs:
         with:
           add-paths: Casks/chatgpt-linux.rb
           branch: automation/update-chatgpt
+          reviewers: ${{ github.repository_owner }}
           commit-message: "chatgpt-linux: update official package metadata"
           title: "chatgpt-linux: update official package metadata"
           body: |
             Update the version and both architecture checksums from OpenAI's
             official Linux package indexes. Downloads remain on OpenAI's origin.
 
-            Review the metadata diff and both architecture installation checks
-            before merging. No application binaries are built or mirrored.
+            This PR merges automatically only after both architecture installation
+            checks pass and a separate check confirms only version/checksum fields
+            changed. Changes outside that scope require manual review.
+            No application binaries are built or mirrored.
 
       # GITHUB_TOKEN-created PR runs can need human approval. An explicit
       # workflow_dispatch starts validation without a separate access token.
       - name: Dispatch installation checks for the update branch
-        if: >-
-          steps.pull-request.outputs.pull-request-number &&
-          (steps.pull-request.outputs.pull-request-operation == 'created' ||
-           steps.pull-request.outputs.pull-request-operation == 'updated')
+        # Retry unchanged open PRs too, so transient runner/download failures recover.
+        if: steps.pull-request.outputs.pull-request-number
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: gh workflow run validate.yml --ref automation/update-chatgpt
+
+      - name: Keep scheduled checks active during quiet release periods
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # A monthly empty commit on a separate branch prevents GitHub's
+          # 60-day inactivity shutdown without touching main or the cask.
+          branch=automation/keepalive
+          if git fetch origin "$branch"; then
+            last_activity="$(git show -s --format=%ct FETCH_HEAD)"
+          else
+            last_activity=0
+          fi
+          if (( $(date +%s) - last_activity < 30 * 24 * 60 * 60 )); then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # commit-tree ignores any pending cask edit in the working directory.
+          commit="$(git commit-tree HEAD^{tree} -p HEAD -m 'Keep scheduled cask updates active')"
+          git push origin "$commit:refs/heads/$branch" --force
