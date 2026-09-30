@@ -1,4 +1,4 @@
-name: Validate ChatGPT cask
+name: Validate Linux casks
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: validate-chatgpt-${{ github.ref }}
+  group: validate-casks-${{ github.ref }}
   cancel-in-progress: true
 
 defaults:
@@ -44,8 +44,10 @@ jobs:
       - name: Check syntax, style, and audit
         run: |
           brew readall --aliases --os=all --arch=all chakachakakhan/tap
-          brew style Casks/chatgpt-linux.rb
-          brew audit --cask --new --strict chakachakakhan/tap/chatgpt-linux
+          brew style Casks/*.rb
+          for cask in chatgpt-linux thorium-reader-linux; do
+            brew audit --cask --new --strict "chakachakakhan/tap/$cask"
+          done
 
       - name: Install official package and check integration
         run: |
@@ -71,3 +73,35 @@ jobs:
             test ! -e "$artifact"
             test ! -L "$artifact"
           done
+
+      - name: Install Thorium Reader and check integration
+        run: |
+          brew install --cask chakachakakhan/tap/thorium-reader-linux
+          test -x "$(brew --prefix)/bin/thorium-reader"
+          ELECTRON_RUN_AS_NODE=1 thorium-reader --version
+          test -s "$HOME/.local/share/icons/thorium-reader.png"
+          grep -Fx "Exec=$(brew --prefix)/bin/thorium-reader %U" \
+            "$HOME/.local/share/applications/thorium-reader.desktop"
+          grep -Fx 'Icon=thorium-reader' "$HOME/.local/share/applications/thorium-reader.desktop"
+          grep -F 'application/epub+zip;' "$HOME/.local/share/applications/thorium-reader.desktop"
+          # A sentinel checks that ordinary uninstall preserves the book library.
+          mkdir -p "$HOME/.config/EDRLab.ThoriumReader"
+          touch "$HOME/.config/EDRLab.ThoriumReader/tap-ci-preserve"
+
+      - name: Check Thorium Reader opens a window
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb x11-utils
+          xvfb-run -a python3 .github/scripts/smoke_thorium.py
+
+      - name: Check Thorium Reader uninstall cleanup
+        run: |
+          brew uninstall --cask chakachakakhan/tap/thorium-reader-linux
+          for artifact in \
+            "$(brew --prefix)/bin/thorium-reader" \
+            "$HOME/.local/share/applications/thorium-reader.desktop" \
+            "$HOME/.local/share/icons/thorium-reader.png"; do
+            test ! -e "$artifact"
+            test ! -L "$artifact"
+          done
+          test -f "$HOME/.config/EDRLab.ThoriumReader/tap-ci-preserve"

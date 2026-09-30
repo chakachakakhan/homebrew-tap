@@ -1,0 +1,57 @@
+name: Update Thorium Reader cask
+
+on:
+  schedule:
+    - cron: "37 */6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: update-casks
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - name: Check out workflow revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Read official stable release metadata and update the cask
+        run: python3 .github/scripts/update_thorium.py
+
+      - name: Open update pull request
+        if: github.ref == 'refs/heads/main'
+        id: pull-request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.0.0
+        with:
+          add-paths: Casks/thorium-reader-linux.rb
+          branch: automation/update-thorium-reader
+          reviewers: ${{ github.repository_owner }}
+          commit-message: "thorium-reader-linux: update official release metadata"
+          title: "thorium-reader-linux: update official release metadata"
+          body: |
+            Update the stable version and both AppImage SHA-256 digests from
+            EDRLab's official GitHub release. Skip drafts and prereleases, and
+            require complete Intel and ARM assets from the expected origin.
+
+            This PR merges automatically only after both architecture installation
+            checks pass and the trusted merge policy verifies that only version
+            and checksum fields changed. Same-version rebuilds require review.
+            No application binaries are built or mirrored by this tap.
+
+      - name: Dispatch installation checks for the update branch
+        # Recheck unchanged open PRs so temporary download/runner failures recover.
+        if: steps.pull-request.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run validate.yml --ref automation/update-thorium-reader

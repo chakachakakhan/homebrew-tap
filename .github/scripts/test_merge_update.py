@@ -4,12 +4,15 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock
 
-from merge_update import BRANCH, CASK, REQUIRED_JOBS, merge_update, metadata_only
+from merge_update import UPDATE_CASKS, REQUIRED_JOBS, merge_update, metadata_only
 
 
 class MergePolicyTests(unittest.TestCase):
+    branch = "automation/update-chatgpt"
+
     def setUp(self):
-        self.before = (Path(__file__).resolve().parents[2] / CASK).read_text()
+        cask = UPDATE_CASKS[self.branch]
+        self.before = (Path(__file__).resolve().parents[2] / cask).read_text()
         # Fixtures stay valid when the real cask's version advances.
         import re
         self.before = re.sub(r'^  version "[^"]+"$', '  version "1.0.0"',
@@ -17,19 +20,19 @@ class MergePolicyTests(unittest.TestCase):
         self.after = self.before.replace('version "1.0.0"', 'version "1.0.1"')
         self.repo = "owner/homebrew-tap"
         self.run = {
-            "id": 42, "event": "workflow_dispatch", "head_branch": BRANCH,
+            "id": 42, "event": "workflow_dispatch", "head_branch": self.branch,
             "head_repository": {"full_name": self.repo}, "head_sha": "tested",
             "path": ".github/workflows/validate.yml", "conclusion": "success",
         }
         self.pr = {
             "number": 3, "title": "ChatGPT update", "draft": False, "state": "open",
             "user": {"login": "github-actions[bot]"}, "changed_files": 1,
-            "head": {"repo": {"full_name": self.repo}, "ref": BRANCH, "sha": "tested"},
+            "head": {"repo": {"full_name": self.repo}, "ref": self.branch, "sha": "tested"},
             "base": {"repo": {"full_name": self.repo}, "ref": "main", "sha": "base"},
         }
         self.comparison = {
             "merge_base_commit": {"sha": "base"},
-            "files": [{"filename": CASK, "status": "modified"}],
+            "files": [{"filename": cask, "status": "modified"}],
         }
         self.jobs = {"total_count": 3, "jobs": [
             {"name": name, "conclusion": "success"} for name in sorted(REQUIRED_JOBS)
@@ -62,7 +65,7 @@ class MergePolicyTests(unittest.TestCase):
 
     def test_uninstall_url_or_code_change_requires_manual_review(self):
         for before, after in (("zap trash:", "zap trash: # changed"),
-                              ("persistent.oaistatic.com", "other.example.com"),
+                              ("https://", "https://other.example.com/"),
                               ('  arch arm:', '  system "unexpected"\n  arch arm:')):
             with self.subTest(change=after):
                 self.assertFalse(metadata_only(self.before, self.after.replace(before, after)))
@@ -139,6 +142,17 @@ class MergePolicyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.merged()
         self.assert_not_merged()
+
+    def test_other_cask_on_update_branch_never_merges(self):
+        other = next(cask for branch, cask in UPDATE_CASKS.items() if branch != self.branch)
+        self.comparison["files"][0]["filename"] = other
+        with self.assertRaises(ValueError):
+            self.merged()
+        self.assert_not_merged()
+
+
+class ThoriumMergePolicyTests(MergePolicyTests):
+    branch = "automation/update-thorium-reader"
 
 
 if __name__ == "__main__":
