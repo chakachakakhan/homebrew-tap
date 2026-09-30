@@ -1,47 +1,75 @@
-# ChatGPT Linux Homebrew tap
+# ChatGPT for Linux, through Homebrew
 
-Install OpenAI's official Linux desktop app with:
+[![Installation checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate.yml)
+[![Update checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update.yml)
+
+My personal Homebrew tap for OpenAI's ChatGPT desktop app on Linux. I made it
+after the tap I was using stopped getting updates, and wanted something small
+that I could keep up to date myself.
+
+This is an unofficial tap, maintained independently of OpenAI and Homebrew.
+The app is downloaded directly from OpenAI; this repo contains the cask and
+its update automation.
+
+## Install
+
+You'll need Homebrew on Linux. The cask supports Intel/AMD (`x86_64`) and ARM
+(`arm64`); installation checks run on Ubuntu 24.04 for both architectures.
 
 ```sh
 brew install --cask chakachakakhan/tap/chatgpt-linux
 ```
 
-## Updates
+The cask installs the `chatgpt` command and a desktop launcher, along with its
+icon and app metadata. Homebrew also installs `dpkg` to extract the official
+Debian package.
 
-The updater checks OpenAI's official stable Debian indexes every six hours. It
-waits for matching Intel and ARM versions, rejects downgrades, and opens one
-update PR with the new version and SHA-256 checksums. The repository owner is
-requested as a reviewer, which uses GitHub's participating notification settings.
-
-Validation runs explicitly on the update branch, including real installation,
-desktop integration, and uninstall checks on Intel and ARM Linux runners.
-Unchanged open PRs are rechecked so temporary download or runner failures recover.
-
-After successful validation, a separate workflow from the trusted default branch
-merges the exact tested commit. It accepts only a bot-authored PR from this tap,
-with one existing cask changed and only its version and checksum fields modified.
-The version must increase. Same-version package rebuilds, application integration
-changes, and workflow changes need manual review. Stale validation cannot merge
-a newer revision; an update must also include the current main branch.
-
-A monthly empty commit on `automation/keepalive` prevents GitHub from disabling
-scheduled workflows after 60 days of repository inactivity. It does not change
-the cask or main branch. The updater and merger share a concurrency group.
-
-Enable Email for participating notifications and failed Actions workflows in
-[GitHub notification settings](https://github.com/settings/notifications).
-There is no separate mail service or expiring personal access token in the updater.
-To pause automatic merging, disable **Merge validated ChatGPT update** in Actions;
-release checks and PR creation can continue.
-
-## Updating your installed app
-
-Updating this tap makes a release available to Homebrew. Install it locally with:
+## Update
 
 ```sh
 brew update
 brew upgrade --cask chakachakakhan/tap/chatgpt-linux
 ```
 
-Normal upgrades and uninstalls preserve app projects and settings. Explicitly
-uninstalling with `--zap` removes the app data directories listed in the cask.
+The automation keeps the cask current. You still run Homebrew to update the
+app on your machine.
+
+## How updates work
+
+- Check OpenAI's stable package indexes every six hours.
+- Wait for matching Intel and ARM versions, then open an update PR with the
+  version and SHA-256 checksums.
+- Test installation, desktop integration, and uninstall cleanup on both
+  architectures before merging automatically.
+
+Automatic merges are limited to version and checksum changes from the updater
+bot. Changes to installation behavior or workflows need manual review.
+Temporary failures are retried, and a monthly keepalive prevents the scheduled
+checks from stopping during quiet release periods.
+
+You can follow the [update PRs](https://github.com/chakachakakhan/homebrew-tap/pulls?q=is%3Apr+head%3Aautomation%2Fupdate-chatgpt)
+or check the [latest workflow runs](https://github.com/chakachakakhan/homebrew-tap/actions).
+
+## Projects and settings
+
+Normal upgrades and uninstalls preserve your app data. Moving from the
+`ublue/experimental-tap` cask preserved my projects and settings, though that
+is my experience rather than a guarantee for every setup.
+
+```sh
+brew uninstall --cask chakachakakhan/tap/chatgpt-linux
+```
+
+Adding `--zap` also removes the ChatGPT and Codex data directories listed in
+the cask, including local configuration and caches. Use it only if you want
+to clear those too.
+
+## Something broken?
+
+[Open an issue](https://github.com/chakachakakhan/homebrew-tap/issues/new) with
+your Linux distribution, CPU architecture, and the Homebrew error. Please
+leave out tokens and private app data. Problems with the app itself belong
+with OpenAI; installation and tap update problems belong here.
+
+For the details of the automation and how to pause it, see
+[maintenance notes](docs/maintenance.md).
