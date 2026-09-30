@@ -1,95 +1,56 @@
-# Desktop apps for Linux, through Homebrew
-
 [![Installation checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate.yml)
 [![Update checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update.yml)
 [![Thorium update checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update-thorium.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update-thorium.yml)
 
-My personal Homebrew tap for ChatGPT and EDRLab's Thorium Reader on Linux.
-I made it after the ChatGPT tap I was using stopped getting updates, and wanted
-something small that I could keep up to date myself.
+this is my personal tap for my homebrew casks, feel free to use it yourself, fork 
+it, whatever, no promise no warranty etc
 
-This is an unofficial tap, maintained independently of OpenAI, EDRLab, and
-Homebrew. Apps are downloaded directly from their publishers; this repo contains
-the casks and their update automation.
+right now its the chatgpt app by openai and thorium reader by edrlab . it takes the 
+apps direct from the publisher, turns it into casks, and in theory should update 
+automatically with new updates. we'll see how that goes... 
 
-## Install
+i vibeslopped the whole project/repo if that bothers you sorry, and then the readme 
+was super slop so i rewrote it by hand, thats what this is. manual slop. i did 
+like the badges so i kept them at the top.
 
-You'll need Homebrew on Linux. Both casks support Intel/AMD (`x86_64`) and ARM
-(`arm64`); installation checks run on Ubuntu 24.04 for both architectures.
 
+## Install and uninstall
+
+depends on homebrew on linux. both casks support intel/amd (ofc) and arm (why)
 ```sh
 brew install --cask chakachakakhan/tap/chatgpt-linux
 brew install --cask chakachakakhan/tap/thorium-reader-linux
 ```
 
-Install either app or both. ChatGPT installs the `chatgpt` command, desktop
-launcher, icon, and app metadata. Homebrew installs `dpkg` to extract its official
-Debian package.
+chatgpt comes with the chatgpt command, desktop launcher, icon, app metadata. homebrew
+installs dpkg to extract the deb package. doesn't come with cli as far as i can tell.
 
-Thorium Reader installs the `thorium-reader` command, desktop launcher, and icon.
-The cask extracts the official AppImage into Homebrew’s Caskroom, so launching
-does not require FUSE, root access, or a Debian package installation. It preserves
-the upstream ebook and OPDS link associations. It is distinct from the Thorium
-web browser.
+thorium reader installs thorium-reader command, desktop launcer, icon. this isn't 
+thorium web browser. its an ereader for epub and other formats.
 
-These are native desktop installations, with no Flatpak sandbox or permission
-portal. Thorium’s upstream launcher adds `--no-sandbox` when its user-namespace
-probe fails; the tap preserves that upstream behavior.
-
-## Update
-
+im using bluefin dakota and it updates homebrew automatically . if ur using another
+ublue flavor like bazzite or aurora it probably functions the same. otherwise
+run 
 ```sh
 brew update
 brew upgrade --cask chakachakakhan/tap/chatgpt-linux
 brew upgrade --cask chakachakakhan/tap/thorium-reader-linux
 ```
 
-The automation keeps the cask current. You still run Homebrew to update the
-app on your machine.
+the github actions automation should keep things current and you just run the 
+homebrew updates to keep it updated on your machine.
 
-## How updates work
-
-- Check OpenAI’s stable package indexes and EDRLab’s latest stable GitHub
-  release every six hours.
-- Require complete Intel and ARM packages, then open a separate update PR for
-  each app with its version and SHA-256 checksums. Thorium skips beta, nightly,
-  and draft releases, and uses GitHub’s official release-asset digests.
-- Test installation, desktop integration, and uninstall cleanup on both
-  architectures before merging automatically. Thorium also opens a real window
-  under a virtual display.
-
-Automatic merges are limited to version and checksum changes from the updater
-bot. Changes to installation behavior or workflows need manual review.
-Temporary failures are retried, and a monthly keepalive prevents the scheduled
-checks from stopping during quiet release periods.
-
-You can follow the [update PRs](https://github.com/chakachakakhan/homebrew-tap/pulls)
-or check the [latest workflow runs](https://github.com/chakachakakhan/homebrew-tap/actions).
-
-## Projects and settings
-
-Normal upgrades and uninstalls preserve your app data, including Thorium’s
-book library in `~/.config/EDRLab.ThoriumReader` (or the corresponding directory
-under a custom `XDG_CONFIG_HOME`). For ChatGPT, moving from the
-`ublue/experimental-tap` cask preserved my projects and settings, though that
-is my experience rather than a guarantee for every setup.
-
+if you upgrade or uninstall normally, it should preserve all your settings and 
+files, folders, etc. in the default config folders for the respective apps. to
+uninstall its like any other homebrew cask
 ```sh
 brew uninstall --cask chakachakakhan/tap/chatgpt-linux
 brew uninstall --cask chakachakakhan/tap/thorium-reader-linux
 ```
 
-Adding `--zap` removes the data directories listed in the selected cask. For
-Thorium this includes its default book library and configuration. For ChatGPT
-it includes ChatGPT and Codex configuration and caches. Use it only if you want
-to clear those too; custom data locations are not included in the zap list.
+use `--zap` to remove the data directories listed in the specific cask. for
+thorium that includes its default book library and config. for chatgpt
+it includes chatgpt and codex configs and caches. zap won't hit custom data 
+locations.
 
-## Something broken?
 
-[Open an issue](https://github.com/chakachakakhan/homebrew-tap/issues/new) with
-your Linux distribution, CPU architecture, and the Homebrew error. Please
-leave out tokens and private app data. Problems with the app itself belong
-with their publisher; installation and tap update problems belong here.
-
-For the details of the automation and how to pause it, see
-[maintenance notes](docs/maintenance.md).
