@@ -93,6 +93,3 @@ with their publisher; installation and tap update problems belong here.
 
 For the details of the automation and how to pause it, see
 [maintenance notes](docs/maintenance.md).
-
-For the Linux tap comparison and packaging choices, see
-[Linux packaging practices](docs/linux-packaging.md).

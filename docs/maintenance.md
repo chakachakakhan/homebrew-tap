@@ -1,5 +1,13 @@
 # Maintenance notes
 
+## Packaging choices
+
+ChatGPT extracts the official Debian package without running distro maintainer
+scripts. Thorium Reader extracts the official AppImage so launching does not
+require FUSE. Both casks register commands and desktop files as Homebrew-managed
+artifacts, which handles removal during upgrades and uninstalls. Ordinary
+uninstall preserves application data; `--zap` removes the listed data directories.
+
 ## Release checks and validation
 
 The ChatGPT updater reads OpenAI's official stable Debian indexes every six hours.
