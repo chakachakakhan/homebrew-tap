@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock
 
-from merge_update import UPDATE_CASKS, REQUIRED_JOBS, merge_update, metadata_only
+from merge_update import UPDATE_CASKS, REQUIRED_JOBS, merge_update, metadata_only, validation_run
 
 
 class MergePolicyTests(unittest.TestCase):
@@ -153,6 +153,46 @@ class MergePolicyTests(unittest.TestCase):
 
 class ThoriumMergePolicyTests(MergePolicyTests):
     branch = "automation/update-thorium-reader"
+
+
+class ValidationDispatchTests(unittest.TestCase):
+    def test_completed_dispatch_fetches_real_run(self):
+        run = {"status": "completed", "conclusion": "success"}
+        request = Mock(return_value=run)
+        pause = Mock()
+        self.assertIs(validation_run("owner/tap", {"inputs": {"validation_run_id": "42"}},
+                                     request, pause), run)
+        request.assert_called_once_with("repos/owner/tap/actions/runs/42")
+        pause.assert_not_called()
+
+    def test_waits_for_completion_and_preserves_failure(self):
+        failed = {"status": "completed", "conclusion": "failure"}
+        request = Mock(side_effect=[{"status": "queued"}, {"status": "in_progress"}, failed])
+        pause = Mock()
+        self.assertIs(validation_run("owner/tap", {"inputs": {"validation_run_id": "42"}},
+                                     request, pause), failed)
+        self.assertEqual(pause.call_count, 2)
+
+    def test_invalid_id_never_accesses_api(self):
+        for run_id in ("", "0", "-1", "42/other", "hello"):
+            request = Mock()
+            with self.assertRaises(ValueError):
+                validation_run("owner/tap", {"inputs": {"validation_run_id": run_id}},
+                               request, Mock())
+            request.assert_not_called()
+
+    def test_timeout_leaves_pr_for_retry(self):
+        request = Mock(return_value={"status": "in_progress"})
+        with self.assertRaises(TimeoutError):
+            validation_run("owner/tap", {"inputs": {"validation_run_id": "42"}},
+                           request, Mock())
+        self.assertEqual(request.call_count, 150)
+
+    def test_existing_workflow_run_handoff_is_preserved(self):
+        run = {"status": "completed", "conclusion": "success"}
+        request = Mock()
+        self.assertIs(validation_run("owner/tap", {"workflow_run": run}, request), run)
+        request.assert_not_called()
 
 
 if __name__ == "__main__":

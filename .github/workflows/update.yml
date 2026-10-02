@@ -1,6 +1,9 @@
 name: Update ChatGPT cask
 
 on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/update.yml]
   schedule:
     - cron: "17 */6 * * *"
   workflow_dispatch:
@@ -102,10 +105,12 @@ jobs:
         with:
           add-paths: Casks/chatgpt-linux.rb
           branch: automation/update-chatgpt
-          reviewers: ${{ github.repository_owner }}
           commit-message: "chatgpt-linux: update official package metadata"
           title: "chatgpt-linux: update official package metadata"
           body: |
+            ChatGPT update notice for @${{ github.repository_owner }}.
+            No review or approval is needed for this routine update.
+
             Update the version and both architecture checksums from OpenAI's
             official Linux package indexes. Downloads remain on OpenAI's origin.
 
@@ -122,7 +127,25 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh workflow run validate.yml --ref automation/update-chatgpt
+          UPDATE_SHA: ${{ steps.pull-request.outputs.pull-request-head-sha }}
+        run: |
+          set -euo pipefail
+          [[ "$UPDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          gh workflow run validate.yml --ref automation/update-chatgpt
+          # An explicit dispatch also reaches the merger for bot-triggered runs.
+          # GitHub suppresses the workflow_run handoff for these runs.
+          for attempt in {1..12}; do
+            run_id="$(gh api \
+              "repos/$GH_REPO/actions/workflows/validate.yml/runs?event=workflow_dispatch&branch=automation/update-chatgpt&head_sha=$UPDATE_SHA&per_page=1" \
+              --jq '.workflow_runs[0].id // empty')"
+            if [[ -n "$run_id" ]]; then
+              gh workflow run merge-update.yml --ref main --field validation_run_id="$run_id"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo 'Could not locate the dispatched validation run' >&2
+          exit 1
 
       - name: Keep scheduled checks active during quiet release periods
         if: github.ref == 'refs/heads/main'

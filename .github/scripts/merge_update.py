@@ -5,6 +5,7 @@ import json
 import os
 import re
 import subprocess
+import time
 from pathlib import Path
 
 UPDATE_CASKS = {
@@ -117,6 +118,23 @@ def merge_update(repo, run, request=api):
     return True
 
 
+def validation_run(repo, event, request=api, pause=time.sleep):
+    """Explicit dispatches bypass GitHub's bot workflow_run suppression."""
+    if "workflow_run" in event:
+        return event["workflow_run"]
+    run_id = event.get("inputs", {}).get("validation_run_id", "")
+    if not re.fullmatch(r"[1-9][0-9]*", run_id):
+        raise ValueError("A numeric validation run ID is required")
+    for attempt in range(150):
+        run = request(f"repos/{repo}/actions/runs/{run_id}")
+        if run["status"] == "completed":
+            return run
+        if attempt < 149:
+            pause(15)
+    raise TimeoutError("Validation did not finish; leave the PR open for retry")
+
+
 if __name__ == "__main__":
     event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())
-    merge_update(os.environ["GH_REPO"], event["workflow_run"])
+    repo = os.environ["GH_REPO"]
+    merge_update(repo, validation_run(repo, event))
