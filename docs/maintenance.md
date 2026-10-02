@@ -12,8 +12,8 @@ uninstall preserves application data; `--zap` removes the listed data directorie
 
 The ChatGPT updater reads OpenAI's official stable Debian indexes every six hours.
 It waits for matching Intel and ARM versions, rejects downgrades, and opens one
-update PR with the new version and SHA-256 checksums. The repository owner is
-requested as a reviewer, which uses GitHub's participating notification settings.
+update PR with the new version and SHA-256 checksums. ChatGPT PRs mention the
+repository owner as an email notification, without requesting review or approval.
 
 The Thorium updater checks EDRLab’s latest stable GitHub release every six hours.
 It rejects draft and prerelease tags, downgrades, incomplete or duplicate
@@ -26,6 +26,11 @@ desktop integration, and uninstall checks on Intel and ARM Linux runners.
 Thorium additionally opens a GUI window using Xvfb with isolated app data, and
 its uninstall check confirms that the user’s book library is preserved.
 Unchanged open PRs are rechecked so temporary download or runner failures recover.
+
+The ChatGPT updater explicitly dispatches the merger on the default branch with
+the validation run ID. It waits for that run to finish, then applies the same
+checks as the workflow-run handoff. This avoids GitHub suppressing follow-up
+events from bot-triggered validation runs.
 
 After successful validation, a separate workflow from the trusted default branch
 merges the exact tested commit. It accepts only a bot-authored PR from this tap,
