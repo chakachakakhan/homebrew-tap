@@ -77,15 +77,19 @@ def smoke(desktop):
                 print(log.read())
                 subprocess.run(["ocx", "stop"], env=env, stdout=subprocess.DEVNULL,
                                stderr=subprocess.DEVNULL, timeout=20, check=False)
-                try:
-                    os.killpg(process.pid, signal.SIGTERM)
-                except ProcessLookupError:
-                    pass
+                if process.poll() is None:
+                    process.terminate()
                 try:
                     process.wait(timeout=10)
                 except subprocess.TimeoutExpired:
-                    os.killpg(process.pid, signal.SIGKILL)
+                    process.kill()
                     process.wait()
+                # Drain surviving helpers in our process group; macOS may deny
+                # group signals after its leader has already exited.
+                try:
+                    os.killpg(process.pid, signal.SIGTERM)
+                except (ProcessLookupError, PermissionError):
+                    pass
 
 
 if __name__ == "__main__":

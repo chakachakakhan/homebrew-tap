@@ -39,6 +39,10 @@ cask "opencodex" do
       run "OpenCodex-{{version}}-linux-x86_64.AppImage", args: ["--appimage-extract"],
                                                    base: :staged_path, chdir: "{{staged_path}}"
       remove "OpenCodex-{{version}}-linux-x86_64.AppImage"
+      # Resolve the script before its parent directory when launched through Homebrew's symlink.
+      inreplace "squashfs-root/AppRun",
+                'this_dir="$(readlink -f "$(dirname "$0")")"',
+                'this_dir="$(dirname "$(readlink -f "$0")")"'
       # Preserve the original desktop file inside the AppDir for AppRun's own lookup.
       copy "squashfs-root/OpenCodex.desktop", "opencodex-desktop.desktop"
       copy "squashfs-root/usr/share/icons/hicolor/512x512/apps/opencodex-desktop.png", "opencodex-desktop.png"

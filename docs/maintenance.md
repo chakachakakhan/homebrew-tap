@@ -90,6 +90,10 @@ and [GitHub Packages](https://docs.github.com/en/packages/learn-github-packages/
 and native keyring addon together in libexec. It exposes `ocx` and `opencodex`.
 `Casks/opencodex.rb` installs the universal macOS DMG or extracts the Linux
 x86_64 AppImage, preserving AppRun and its bundled libraries and sidecar. There is
+one AppRun path correction so it resolves its own executable before its parent
+directory when invoked through Homebrew's symlink. Extraction fails if upstream
+changes that launcher line, requiring a reviewed packaging adjustment.
+There is
 no Linux ARM desktop asset upstream. Downloads stay on lidge-jun/opencodex Releases.
 
 The separate **Update OpenCodex packages** workflow checks every six hours. It
