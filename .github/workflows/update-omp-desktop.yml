@@ -1,0 +1,74 @@
+name: Update OMP Desktop cask
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Casks/omp-desktop.rb
+      - .github/scripts/update_omp_desktop.py
+      - .github/workflows/update-omp-desktop.yml
+  schedule:
+    - cron: "47 */6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: update-casks
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+        with:
+          ref: ${{ github.ref }}
+      - name: Update from the complete official stable Linux release
+        run: python3 .github/scripts/update_omp_desktop.py
+      - name: Open routine update pull request
+        if: github.ref == 'refs/heads/main'
+        id: pull-request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.0.0
+        with:
+          add-paths: Casks/omp-desktop.rb
+          branch: automation/update-omp-desktop
+          commit-message: "omp-desktop: update official release metadata"
+          title: "omp-desktop: update official release metadata"
+          body: |
+            Update OMP Desktop's stable version and Linux AppImage SHA-256
+            checksum from the official apoc/omp-desktop release.
+            The tap downloads the publisher's binaries directly.
+
+            No review or approval is needed for routine updates. A separate
+            workflow merges the exact tested commit after the Linux installation and policy
+            checks pass and it verifies that only version/checksum fields changed.
+      # Explicit dispatches bypass GitHub's suppression of bot-triggered PR events.
+      # Retry unchanged open PRs so temporary download/runner failures recover.
+      - name: Dispatch installation checks and trusted merger
+        if: steps.pull-request.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          UPDATE_SHA: ${{ steps.pull-request.outputs.pull-request-head-sha }}
+        run: |
+          set -euo pipefail
+          [[ "$UPDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          gh workflow run validate-omp-desktop.yml --ref automation/update-omp-desktop
+          for attempt in {1..12}; do
+            run_id="$(gh api \
+              "repos/$GH_REPO/actions/workflows/validate-omp-desktop.yml/runs?event=workflow_dispatch&branch=automation/update-omp-desktop&head_sha=$UPDATE_SHA&per_page=1" \
+              --jq '.workflow_runs[0].id // empty')"
+            if [[ -n "$run_id" ]]; then
+              gh workflow run merge-omp-desktop.yml --ref main --field validation_run_id="$run_id"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo 'Could not locate the dispatched validation run' >&2
+          exit 1

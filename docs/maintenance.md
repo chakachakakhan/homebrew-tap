@@ -112,3 +112,54 @@ recipes. Code, URL, architecture, or installation changes cannot merge under
 that policy. Same-version rebuilds are rejected. All updaters and mergers use
 the existing shared concurrency group. Disable the OpenCodex merger to pause
 its automatic merges without affecting the other apps.
+
+## OMP Desktop
+
+`Casks/omp-desktop.rb` installs apoc's official Linux x86_64 AppImage after
+extraction, keeping its GTK setup and bundled libraries together without
+FUSE. The generic AppImage shim's PYTHONHOME and PYTHONPATH keys are replaced
+with unused, equally sized APP_PYHOME and APP_PYPATH keys. This retains its
+GTK/WebKit library paths and working directory while preventing it from pointing
+external Python tools at a nonexistent bundled runtime. CI checks these keys
+and uses a normal system-Python RPC proxy to catch environment contamination.
+The Homebrew command adds the actual Homebrew prefix to PATH before
+running AppRun by its full path; desktop-menu launches can therefore find the
+separately installed `omp` from `can1357/tap`.
+Project folder arguments are resolved before AppRun changes its working
+directory, so terminal launches such as `omp-desktop .` open the intended folder.
+
+Tauri's fixed-width `__TAURI_BUNDLE_TYPE_VAR_APP` marker is replaced with
+`__TAURI_BUNDLE_TYPE_VAR_UNK` in the extracted executable. This switches the
+upstream updater to its existing notify-only path, so it cannot overwrite a
+Homebrew-managed payload. The replacement is audited and fails if the marker
+changes upstream. This is a packaging adjustment, not an application rebuild.
+The recipe registers a command, folder-aware desktop entry, and icon.
+
+The strict Homebrew audit excludes only `github_repository` and
+`token_bad_words`: this personal tap accepts the small upstream project and
+uses its desktop name to distinguish the separately installed OMP engine.
+The remaining recipe and artifact audits still run.
+
+`--zap` targets only `dev.ohMyPi.desktop` application data. It deliberately
+does not target `~/.omp`, shared credentials, saved sessions, or named profiles.
+
+The separate updater checks stable releases every six hours and also checks
+after this package's setup changes on main. It requires one complete Linux
+AppImage at the exact upstream origin with a GitHub SHA-256 digest. Drafts,
+prereleases, downgrades, malformed metadata, and same-version rebuilds are
+rejected. A bot update can change only the existing cask's version and checksum.
+
+Validation installs the current upstream Homebrew OMP, checks the desktop
+integration and notify-only marker, then opens the GUI under Xvfb with a minimal
+launcher PATH and a relative project argument. A transparent test proxy observes
+a successful RPC get_state response from the real OMP engine in that project;
+it sends no model prompt and uses no provider
+credentials. Ordinary uninstall must remove the desktop artifacts while
+preserving both desktop settings and OMP data.
+
+The updater explicitly dispatches validation and the trusted main-branch merger.
+Only both required jobs passing at the current PR head, a same-repository bot PR,
+an unchanged current main base, and a strictly newer metadata-only cask change
+permit automatic merging. It shares the existing update concurrency group and
+keepalive. Disable **Merge validated OMP Desktop update** to pause its automatic
+merges without changing other apps.

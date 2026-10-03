@@ -2,11 +2,12 @@
 [![Update checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update.yml)
 [![Thorium update checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update-thorium.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update-thorium.yml)
 [![OpenCodex checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-opencodex.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-opencodex.yml)
+[![OMP Desktop checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-omp-desktop.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-omp-desktop.yml)
 
 this is my personal tap for my homebrew casks, feel free to use it yourself, fork 
 it, whatever, no promise no warranty etc
 
-right now its the chatgpt app by openai, thorium reader by edrlab, and opencodex . it takes the
+right now its the chatgpt app by openai, thorium reader by edrlab, opencodex, and omp desktop . it takes the
 apps direct from the publisher, turns it into casks, and in theory should update 
 automatically with new updates. we'll see how that goes... 
 
@@ -90,3 +91,36 @@ brew upgrade --formula chakachakakhan/tap/opencodex
 
 ordinary uninstall keeps your settings. desktop `--zap` removes the listed
 opencodex data including `~/.opencodex`, which the cli also uses.
+
+## OMP Desktop
+
+omp desktop is [apoc/omp-desktop](https://github.com/apoc/omp-desktop), a gui
+for the oh my pi engine you already have installed. linux intel/amd for now.
+
+```sh
+brew install --cask chakachakakhan/tap/omp-desktop
+```
+
+launch it from the app menu or run `omp-desktop /path/to/project`.
+it uses your installed `omp`, including its provider logins, settings, and sessions.
+if you need the engine too: `brew install can1357/tap/omp`.
+
+the appimage is extracted so it doesn't need fuse. the launcher includes
+homebrew's command path so it can find omp when opened from the app menu.
+updates belong to homebrew for this installation:
+
+```sh
+brew update
+brew upgrade --cask chakachakakhan/tap/omp-desktop
+```
+
+github checks releases every six hours and merges routine updates after the
+install, launch, and update-policy checks pass. no pr merging needed.
+
+ordinary uninstall preserves desktop settings and all omp data.
+`--zap` removes only the desktop's listed settings and caches; it keeps
+`~/.omp`, including the engine's logins, sessions, and named profiles.
+
+```sh
+brew uninstall --cask chakachakakhan/tap/omp-desktop
+```

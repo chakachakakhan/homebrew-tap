@@ -1,0 +1,80 @@
+name: Validate OMP Desktop
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-omp-desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+jobs:
+  policy:
+    name: OMP Desktop policy tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+
+  install:
+    name: OMP Desktop (ubuntu-24.04)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Set up Homebrew and the tap checkout
+        uses: Homebrew/actions/setup-homebrew@848c272c7bfe984a197bd4d16383f4c106ec61e6 # 2026.09.21.1
+      - name: Check recipe
+        run: |
+          brew readall --aliases --os=all --arch=all chakachakakhan/tap
+          brew style Casks/omp-desktop.rb
+          # This personal tap intentionally packages a small upstream project
+          # and keeps "desktop" in the name to distinguish the existing engine.
+          brew audit --cask --new --strict --except=github_repository,token_bad_words \
+            chakachakakhan/tap/omp-desktop
+      - name: Install desktop and the upstream OMP engine
+        run: |
+          brew install can1357/tap/omp
+          brew test can1357/tap/omp
+          brew install --cask chakachakakhan/tap/omp-desktop
+      - name: Check desktop integration and update ownership
+        run: |
+          test -x "$(brew --prefix)/bin/omp-desktop"
+          test -s "$HOME/.local/share/icons/omp-desktop.png"
+          grep -Fx "Exec=$(brew --prefix)/bin/omp-desktop %F" \
+            "$HOME/.local/share/applications/omp-desktop.desktop"
+          grep -Fx 'Icon=omp-desktop' "$HOME/.local/share/applications/omp-desktop.desktop"
+          grep -Fx 'MimeType=inode/directory;' "$HOME/.local/share/applications/omp-desktop.desktop"
+          python3 .github/scripts/smoke_omp_desktop.py --inspect
+      - name: Check window and real OMP RPC connection from a minimal desktop PATH
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb x11-utils dbus-x11 libwebkit2gtk-4.1-0
+          dbus-run-session -- xvfb-run -a python3 .github/scripts/smoke_omp_desktop.py
+      - name: Check uninstall cleanup and preservation of OMP data
+        run: |
+          mkdir -p "$HOME/.config/dev.ohMyPi.desktop" "$HOME/.omp/agent"
+          touch "$HOME/.config/dev.ohMyPi.desktop/tap-ci-preserve"
+          touch "$HOME/.omp/agent/tap-ci-preserve"
+          brew uninstall --cask chakachakakhan/tap/omp-desktop
+          for artifact in \
+            "$(brew --prefix)/bin/omp-desktop" \
+            "$HOME/.local/share/applications/omp-desktop.desktop" \
+            "$HOME/.local/share/icons/omp-desktop.png"; do
+            test ! -e "$artifact"
+            test ! -L "$artifact"
+          done
+          test -f "$HOME/.config/dev.ohMyPi.desktop/tap-ci-preserve"
+          test -f "$HOME/.omp/agent/tap-ci-preserve"
+          test -x "$(brew --prefix)/bin/omp"
