@@ -117,9 +117,11 @@ its automatic merges without affecting the other apps.
 
 `Casks/omp-desktop.rb` installs apoc's official Linux x86_64 AppImage after
 extraction, keeping its GTK setup and bundled libraries together without
-FUSE. AppRun runs the native executable with the bundled library path, bypassing
-the generic AppImage shim: that shim sets PYTHONHOME to a nonexistent bundled
-runtime and breaks external Python programs, including the RPC test proxy.
+FUSE. The generic AppImage shim's PYTHONHOME and PYTHONPATH keys are replaced
+with unused, equally sized APP_PYHOME and APP_PYPATH keys. This retains its
+GTK/WebKit library paths and working directory while preventing it from pointing
+external Python tools at a nonexistent bundled runtime. CI checks these keys
+and uses a normal system-Python RPC proxy to catch environment contamination.
 The Homebrew command adds the actual Homebrew prefix to PATH before
 running AppRun by its full path; desktop-menu launches can therefore find the
 separately installed `omp` from `can1357/tap`.

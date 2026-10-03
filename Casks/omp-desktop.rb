@@ -29,12 +29,11 @@ cask "omp-desktop" do
                                                base: :staged_path, chdir: "{{staged_path}}"
     remove "OMP.Desktop_{{version}}_amd64.AppImage"
 
-    # The generic AppRun shim forces system Python into a nonexistent bundled
-    # runtime. Keep GTK's hook and library setup, then run the native app directly.
-    inreplace "squashfs-root/AppRun", 'exec "$this_dir"/AppRun.wrapped "$@"', <<~SH
-      export LD_LIBRARY_PATH="$this_dir/usr/lib:$this_dir/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}"
-      exec "$this_dir/usr/bin/omp-desktop" "$@"
-    SH
+    # Keep AppRun's GTK/WebKit paths and working directory, but stop its generic
+    # shim from redirecting external Python tools to an absent bundled runtime.
+    # Fixed-width private environment keys leave ELF offsets unchanged.
+    inreplace "squashfs-root/AppRun.wrapped", "PYTHONHOME", "APP_PYHOME"
+    inreplace "squashfs-root/AppRun.wrapped", "PYTHONPATH", "APP_PYPATH"
 
     # Tauri's fixed-width bundle marker controls whether its updater replaces
     # this executable. An extracted Homebrew installation must be notify-only.
