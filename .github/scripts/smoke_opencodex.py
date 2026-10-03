@@ -84,8 +84,7 @@ def smoke(desktop):
                 except subprocess.TimeoutExpired:
                     process.kill()
                     process.wait()
-                # Drain surviving helpers in our process group; macOS may deny
-                # group signals after its leader has already exited.
+                # Drain surviving helpers in this test's process group.
                 try:
                     os.killpg(process.pid, signal.SIGTERM)
                 except (ProcessLookupError, PermissionError):

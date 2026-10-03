@@ -11,7 +11,7 @@ from update_opencodex import PACKAGE_ASSETS, metadata_only, package_version
 BRANCH = "automation/update-opencodex"
 REQUIRED_JOBS = {"OpenCodex policy tests"} | {
     f"OpenCodex ({runner})" for runner in
-    ("ubuntu-24.04", "ubuntu-24.04-arm", "macos-15", "macos-15-intel")
+    ("ubuntu-24.04", "ubuntu-24.04-arm")
 }
 
 
@@ -29,7 +29,7 @@ def merge_update(repo, run, request=api):
     if jobs["total_count"] != len(REQUIRED_JOBS) or {
         job["name"] for job in jobs["jobs"] if job["conclusion"] == "success"
     } != REQUIRED_JOBS:
-        raise ValueError("All four platform installations and policy tests must pass")
+        raise ValueError("Both Linux installations and policy tests must pass")
     owner = repo.split("/")[0]
     prs = request(f"{prefix}/pulls?state=open&base=main&head={owner}:{BRANCH}")
     if not prs:

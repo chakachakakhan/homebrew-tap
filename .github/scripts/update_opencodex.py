@@ -8,20 +8,15 @@ from pathlib import Path
 ORIGIN = "https://github.com/lidge-jun/opencodex/releases/download"
 PACKAGE_ASSETS = {
     "Formula/opencodex.rb": (
-        "ocx-{version}-bun-darwin-arm64.tar.gz",
-        "ocx-{version}-bun-darwin-x64.tar.gz",
         "ocx-{version}-bun-linux-arm64.tar.gz",
         "ocx-{version}-bun-linux-x64.tar.gz",
     ),
     "Casks/opencodex.rb": (
-        # Homebrew has separate Intel/ARM checksum fields for the same universal DMG.
-        "OpenCodex-{version}-macos.dmg",
-        "OpenCodex-{version}-macos.dmg",
         "OpenCodex-{version}-linux-x86_64.AppImage",
     ),
 }
 VERSION = r'^  version "(\d+(?:\.\d+)+)"$'
-CHECKSUM = r'^((?: +sha256(?: +arm:)?| +(?:intel|x86_64_linux):) +)"([0-9a-f]{64})"(,?)$'
+CHECKSUM = r'^( +sha256 )"([0-9a-f]{64})"$'
 
 
 def package_version(content):
@@ -38,7 +33,7 @@ def version_tuple(version):
 def normalize_metadata(content, path):
     package_version(content)
     content = re.sub(VERSION, "<version>", content, flags=re.MULTILINE)
-    content, count = re.subn(CHECKSUM, lambda match: f'{match[1]}"<checksum>"{match[3]}',
+    content, count = re.subn(CHECKSUM, lambda match: f'{match[1]}"<checksum>"',
                              content, flags=re.MULTILINE)
     if count != len(PACKAGE_ASSETS[path]):
         raise ValueError("Unexpected checksum count or malformed metadata")
@@ -93,7 +88,7 @@ def update_packages(originals, release):
             digests.append(digest.removeprefix("sha256:"))
         checksums = iter(digests)
         content = re.sub(VERSION, f'  version "{version}"', original, flags=re.MULTILINE)
-        content = re.sub(CHECKSUM, lambda match: f'{match[1]}"{next(checksums)}"{match[3]}',
+        content = re.sub(CHECKSUM, lambda match: f'{match[1]}"{next(checksums)}"',
                          content, flags=re.MULTILINE)
         if old_version == version and content != original:
             raise ValueError("Same-version rebuilds require manual review")

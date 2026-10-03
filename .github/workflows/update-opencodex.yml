@@ -42,7 +42,7 @@ jobs:
             The tap downloads the publisher's binaries directly.
 
             No review or approval is needed for routine updates. A separate
-            workflow merges the exact tested commit after all four platform
+            workflow merges the exact tested commit after both Linux installation
             checks pass and it verifies that only version/checksum fields changed.
       # Explicit dispatches bypass GitHub's suppression of bot-triggered PR events.
       # Retry unchanged open PRs so temporary download/runner failures recover.

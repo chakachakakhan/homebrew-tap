@@ -4,16 +4,7 @@ class Opencodex < Formula
   version "2.76.0"
   license "MIT"
 
-  on_macos do
-    on_arm do
-      url "https://github.com/lidge-jun/opencodex/releases/download/v#{version}/ocx-#{version}-bun-darwin-arm64.tar.gz"
-      sha256 "14322ffe96ab9dd886939c006e97813817b56463578b112391490e4ca4064b2f"
-    end
-    on_intel do
-      url "https://github.com/lidge-jun/opencodex/releases/download/v#{version}/ocx-#{version}-bun-darwin-x64.tar.gz"
-      sha256 "23ae617019229cc0c06c0b5cec8f8412de698161d19181b294a55fcd9443b46d"
-    end
-  end
+  depends_on :linux
 
   on_linux do
     on_arm do
