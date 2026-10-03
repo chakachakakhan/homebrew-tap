@@ -10,29 +10,28 @@ cask "emacs-pgtk-linux" do
   homepage "https://www.gnu.org/software/emacs/"
 
   livecheck do
-    url "https://ftpmirror.gnu.org/emacs/"
+    url "https://ftp.gnu.org/gnu/emacs/"
     regex(/href=["']?emacs[._-]v?(\d+\.[1-9]\d*(?:\.\d+)?)\.t/i)
+    strategy :page_match
   end
 
   depends_on formula: "chakachakakhan/tap/emacs-pgtk"
   depends_on linux: :any
 
   artifact "emacs-#{version}/etc/emacs.desktop",
-           target: "#{Dir.home}/.local/share/applications/emacs-pgtk.desktop"
+           target: "#{Dir.home}/.local/share/applications/emacs.desktop"
   artifact "emacs-#{version}/etc/emacsclient.desktop",
-           target: "#{Dir.home}/.local/share/applications/emacs-pgtk-client.desktop"
+           target: "#{Dir.home}/.local/share/applications/emacsclient.desktop"
   artifact "emacs-#{version}/etc/images/icons/hicolor/scalable/apps/emacs.svg",
-           target: "#{Dir.home}/.local/share/icons/emacs-pgtk.svg"
+           target: "#{Dir.home}/.local/share/icons/emacs.svg"
 
   preflight_steps do
     inreplace "emacs-{{version}}/etc/emacs.desktop", "Exec=emacs %F",
               "Exec={{HOMEBREW_PREFIX}}/opt/emacs-pgtk/bin/emacs %F"
-    inreplace "emacs-{{version}}/etc/emacs.desktop", "Icon=emacs", "Icon=emacs-pgtk"
     inreplace "emacs-{{version}}/etc/emacsclient.desktop", "emacsclient --",
               "{{HOMEBREW_PREFIX}}/opt/emacs-pgtk/bin/emacsclient --"
     inreplace "emacs-{{version}}/etc/emacsclient.desktop", "Exec=emacs %F",
               "Exec={{HOMEBREW_PREFIX}}/opt/emacs-pgtk/bin/emacs %F"
-    inreplace "emacs-{{version}}/etc/emacsclient.desktop", "Icon=emacs", "Icon=emacs-pgtk"
   end
 
   caveats <<~EOS

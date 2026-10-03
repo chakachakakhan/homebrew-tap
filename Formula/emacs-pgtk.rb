@@ -7,8 +7,10 @@ class EmacsPgtk < Formula
   license "GPL-3.0-or-later"
 
   livecheck do
-    url "https://ftpmirror.gnu.org/emacs/"
+    # GNU's mirror selector can redirect the index to HTTP; check GNU over HTTPS.
+    url "https://ftp.gnu.org/gnu/emacs/" # rubocop:disable FormulaAudit/Urls
     regex(/href=["']?emacs[._-]v?(\d+\.[1-9]\d*(?:\.\d+)?)\.t/i)
+    strategy :page_match
   end
 
   depends_on "pkgconf" => :build

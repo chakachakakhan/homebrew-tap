@@ -89,13 +89,13 @@ jobs:
           brew install --cask chakachakakhan/tap/emacs-pgtk-linux
           brew test chakachakakhan/tap/emacs-pgtk
           brew linkage --test chakachakakhan/tap/emacs-pgtk
-          test -s "$HOME/.local/share/icons/emacs-pgtk.svg"
+          test -s "$HOME/.local/share/icons/emacs.svg"
           grep -Fx "Exec=$(brew --prefix)/opt/emacs-pgtk/bin/emacs %F" \
-            "$HOME/.local/share/applications/emacs-pgtk.desktop"
+            "$HOME/.local/share/applications/emacs.desktop"
           sudo apt-get update
           sudo apt-get install -y xvfb x11-utils dbus-x11 weston desktop-file-utils
-          desktop-file-validate "$HOME/.local/share/applications/emacs-pgtk.desktop"
-          desktop-file-validate "$HOME/.local/share/applications/emacs-pgtk-client.desktop"
+          desktop-file-validate "$HOME/.local/share/applications/emacs.desktop"
+          desktop-file-validate "$HOME/.local/share/applications/emacsclient.desktop"
 
       - name: Exercise GUI, daemon, and terminal client on X11
         run: dbus-run-session -- xvfb-run -a python3 .github/scripts/smoke_emacs.py
@@ -115,9 +115,9 @@ jobs:
           for artifact in \
             "$(brew --prefix)/bin/emacs" \
             "$(brew --prefix)/bin/emacsclient" \
-            "$HOME/.local/share/applications/emacs-pgtk.desktop" \
-            "$HOME/.local/share/applications/emacs-pgtk-client.desktop" \
-            "$HOME/.local/share/icons/emacs-pgtk.svg"; do
+            "$HOME/.local/share/applications/emacs.desktop" \
+            "$HOME/.local/share/applications/emacsclient.desktop" \
+            "$HOME/.local/share/icons/emacs.svg"; do
             test ! -e "$artifact"
             test ! -L "$artifact"
           done
