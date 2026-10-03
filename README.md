@@ -57,7 +57,7 @@ locations.
 ## OpenCodex
 
 opencodex is [lidge-jun/opencodex](https://github.com/lidge-jun/opencodex).
-the desktop app works on mac (intel and apple silicon) and linux intel/amd.
+the desktop app works on linux intel/amd.
 the linux appimage is extracted so it doesn't need fuse. upstream doesn't have
 a linux arm desktop build yet.
 
@@ -65,10 +65,10 @@ a linux arm desktop build yet.
 brew install --cask chakachakakhan/tap/opencodex
 ```
 
-on linux launch it from the app menu or run `opencodex-desktop`. on mac open
-OpenCodex from Applications. the desktop comes with its own proxy runtime.
+launch it from the app menu or run `opencodex-desktop`.
+the desktop comes with its own proxy runtime.
 
-if you want the separate cli too, this supports mac and linux on intel/amd and arm:
+if you want the separate cli too, this supports linux on intel/amd and arm:
 
 ```sh
 brew install --formula chakachakakhan/tap/opencodex

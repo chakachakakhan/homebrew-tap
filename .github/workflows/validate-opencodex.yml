@@ -35,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-15, macos-15-intel]
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
     steps:
       - name: Set up Homebrew and the tap checkout
         uses: Homebrew/actions/setup-homebrew@848c272c7bfe984a197bd4d16383f4c106ec61e6 # 2026.09.21.1
@@ -44,7 +44,7 @@ jobs:
         run: |
           brew readall --aliases --os=all --arch=all chakachakakhan/tap
           brew style Formula/opencodex.rb Casks/opencodex.rb
-          # One explicit version drives all four interpolated URLs. The updater
+          # One explicit version drives both architecture URLs. The updater
           # validates it; Homebrew's redundant-version lint dislikes this layout.
           brew audit --formula --strict --except=version chakachakakhan/tap/opencodex
           if [[ '${{ matrix.runner }}' != ubuntu-24.04-arm ]]; then
@@ -72,13 +72,6 @@ jobs:
           sudo apt-get install -y xvfb x11-utils dbus-x11 libwebkit2gtk-4.1-0 libayatana-appindicator3-1
           dbus-run-session -- xvfb-run -a python3 .github/scripts/smoke_opencodex.py --desktop
 
-      - name: Check macOS app signature and bundled CLI
-        if: runner.os == 'macOS'
-        run: |
-          test -d /Applications/OpenCodex.app
-          codesign --verify --deep --strict /Applications/OpenCodex.app
-          /Applications/OpenCodex.app/Contents/MacOS/ocx --version
-
       - name: Check uninstall and preservation of settings
         run: |
           mkdir -p "$HOME/.opencodex"
@@ -94,7 +87,5 @@ jobs:
           if [[ '${{ matrix.runner }}' == ubuntu-24.04 ]]; then
             test ! -e "$HOME/.local/share/applications/opencodex-desktop.desktop"
             test ! -e "$HOME/.local/share/icons/opencodex-desktop.png"
-          elif [[ '${{ runner.os }}' == macOS ]]; then
-            test ! -e /Applications/OpenCodex.app
           fi
           test -f "$HOME/.opencodex/tap-ci-preserve"
