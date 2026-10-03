@@ -26,13 +26,13 @@ class EmacsPgtk < Formula
   depends_on "libpng"
   depends_on "librsvg"
   depends_on "libtiff"
-  depends_on "libwebp"
   depends_on "libxml2"
   depends_on :linux
   depends_on "little-cms2"
   depends_on "ncurses"
   depends_on "sqlite"
   depends_on "tree-sitter"
+  depends_on "webp"
   depends_on "zlib-ng-compat"
 
   conflicts_with "emacs", because: "both install emacs, emacsclient, and etags"
