@@ -43,23 +43,23 @@ jobs:
       - name: Check recipes
         run: |
           brew readall --aliases --os=all --arch=all chakachakakhan/tap
-          brew style Formula/opencodex.rb Casks/opencodex-desktop.rb
+          brew style Formula/opencodex.rb Casks/opencodex.rb
           # One explicit version drives all four interpolated URLs. The updater
           # validates it; Homebrew's redundant-version lint dislikes this layout.
-          brew audit --strict --except=version chakachakakhan/tap/opencodex
+          brew audit --formula --strict --except=version chakachakakhan/tap/opencodex
           if [[ '${{ matrix.runner }}' != ubuntu-24.04-arm ]]; then
-            brew audit --cask --new --strict chakachakakhan/tap/opencodex-desktop
+            brew audit --cask --new --strict chakachakakhan/tap/opencodex
           fi
 
       - name: Install CLI and exercise proxy and dashboard
         run: |
-          brew install chakachakakhan/tap/opencodex
+          brew install --formula chakachakakhan/tap/opencodex
           brew test chakachakakhan/tap/opencodex
           python3 .github/scripts/smoke_opencodex.py
 
       - name: Install desktop
         if: matrix.runner != 'ubuntu-24.04-arm'
-        run: brew install --cask chakachakakhan/tap/opencodex-desktop
+        run: brew install --cask chakachakakhan/tap/opencodex
 
       - name: Check Linux desktop integration and window
         if: matrix.runner == 'ubuntu-24.04'
@@ -84,9 +84,9 @@ jobs:
           mkdir -p "$HOME/.opencodex"
           touch "$HOME/.opencodex/tap-ci-preserve"
           if [[ '${{ matrix.runner }}' != ubuntu-24.04-arm ]]; then
-            brew uninstall --cask chakachakakhan/tap/opencodex-desktop
+            brew uninstall --cask chakachakakhan/tap/opencodex
           fi
-          brew uninstall chakachakakhan/tap/opencodex
+          brew uninstall --formula chakachakakhan/tap/opencodex
           for command in ocx opencodex opencodex-desktop; do
             test ! -e "$(brew --prefix)/bin/$command"
             test ! -L "$(brew --prefix)/bin/$command"

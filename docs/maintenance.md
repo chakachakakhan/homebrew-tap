@@ -88,7 +88,7 @@ and [GitHub Packages](https://docs.github.com/en/packages/learn-github-packages/
 
 `Formula/opencodex.rb` installs the publisher's standalone Bun runtime, dashboard,
 and native keyring addon together in libexec. It exposes `ocx` and `opencodex`.
-`Casks/opencodex-desktop.rb` installs the universal macOS DMG or extracts the Linux
+`Casks/opencodex.rb` installs the universal macOS DMG or extracts the Linux
 x86_64 AppImage, preserving AppRun and its bundled libraries and sidecar. There is
 no Linux ARM desktop asset upstream. Downloads stay on lidge-jun/opencodex Releases.
 

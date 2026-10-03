@@ -32,7 +32,7 @@ jobs:
         with:
           add-paths: |
             Formula/opencodex.rb
-            Casks/opencodex-desktop.rb
+            Casks/opencodex.rb
           branch: automation/update-opencodex
           commit-message: "opencodex: update official release metadata"
           title: "opencodex: update official release metadata"

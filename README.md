@@ -62,7 +62,7 @@ the linux appimage is extracted so it doesn't need fuse. upstream doesn't have
 a linux arm desktop build yet.
 
 ```sh
-brew install --cask chakachakakhan/tap/opencodex-desktop
+brew install --cask chakachakakhan/tap/opencodex
 ```
 
 on linux launch it from the app menu or run `opencodex-desktop`. on mac open
@@ -71,7 +71,7 @@ OpenCodex from Applications. the desktop comes with its own proxy runtime.
 if you want the separate cli too, this supports mac and linux on intel/amd and arm:
 
 ```sh
-brew install chakachakakhan/tap/opencodex
+brew install --formula chakachakakhan/tap/opencodex
 ocx init
 ocx start
 ```
@@ -84,8 +84,8 @@ install checks pass. no pr merging needed. update your machine through homebrew:
 
 ```sh
 brew update
-brew upgrade --cask chakachakakhan/tap/opencodex-desktop
-brew upgrade chakachakakhan/tap/opencodex
+brew upgrade --cask chakachakakhan/tap/opencodex
+brew upgrade --formula chakachakakhan/tap/opencodex
 ```
 
 ordinary uninstall keeps your settings. desktop `--zap` removes the listed

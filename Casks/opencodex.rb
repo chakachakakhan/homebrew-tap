@@ -1,4 +1,4 @@
-cask "opencodex-desktop" do
+cask "opencodex" do
   version "2.76.0"
   sha256 arm:          "bfe77313bd9b26c4e484b09c5bdad1b4626d945554980aa2ec285cd2794e6b79",
          intel:        "bfe77313bd9b26c4e484b09c5bdad1b4626d945554980aa2ec285cd2794e6b79",
@@ -57,7 +57,7 @@ cask "opencodex-desktop" do
       <<~EOS
         Launch OpenCodex from your application menu or run opencodex-desktop.
         Update this extracted installation with:
-          brew upgrade --cask chakachakakhan/tap/opencodex-desktop
+          brew upgrade --cask chakachakakhan/tap/opencodex
       EOS
     end
   end

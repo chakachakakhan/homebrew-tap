@@ -13,7 +13,7 @@ PACKAGE_ASSETS = {
         "ocx-{version}-bun-linux-arm64.tar.gz",
         "ocx-{version}-bun-linux-x64.tar.gz",
     ),
-    "Casks/opencodex-desktop.rb": (
+    "Casks/opencodex.rb": (
         # Homebrew has separate Intel/ARM checksum fields for the same universal DMG.
         "OpenCodex-{version}-macos.dmg",
         "OpenCodex-{version}-macos.dmg",

@@ -99,7 +99,7 @@ class OpenCodexMergeTests(unittest.TestCase):
             self.assert_rejected()
 
     def test_code_or_url_change_is_rejected_even_with_green_checks(self):
-        path = "Casks/opencodex-desktop.rb"
+        path = "Casks/opencodex.rb"
         self.after[path] += '\nsystem "unexpected"\n'
         self.assert_rejected()
 
