@@ -1,0 +1,100 @@
+name: Validate OpenCodex
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-opencodex-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+jobs:
+  policy:
+    name: OpenCodex policy tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+
+  install:
+    name: OpenCodex (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-15, macos-15-intel]
+    steps:
+      - name: Set up Homebrew and the tap checkout
+        uses: Homebrew/actions/setup-homebrew@848c272c7bfe984a197bd4d16383f4c106ec61e6 # 2026.09.21.1
+
+      - name: Check recipes
+        run: |
+          brew readall --aliases --os=all --arch=all chakachakakhan/tap
+          brew style Formula/opencodex.rb Casks/opencodex.rb
+          # One explicit version drives all four interpolated URLs. The updater
+          # validates it; Homebrew's redundant-version lint dislikes this layout.
+          brew audit --formula --strict --except=version chakachakakhan/tap/opencodex
+          if [[ '${{ matrix.runner }}' != ubuntu-24.04-arm ]]; then
+            brew audit --cask --new --strict chakachakakhan/tap/opencodex
+          fi
+
+      - name: Install CLI and exercise proxy and dashboard
+        run: |
+          brew install --formula chakachakakhan/tap/opencodex
+          brew test chakachakakhan/tap/opencodex
+          python3 .github/scripts/smoke_opencodex.py
+
+      - name: Install desktop
+        if: matrix.runner != 'ubuntu-24.04-arm'
+        run: brew install --cask chakachakakhan/tap/opencodex
+
+      - name: Check Linux desktop integration and window
+        if: matrix.runner == 'ubuntu-24.04'
+        run: |
+          test -x "$(brew --prefix)/bin/opencodex-desktop"
+          test -s "$HOME/.local/share/icons/opencodex-desktop.png"
+          grep -Fx "Exec=$(brew --prefix)/bin/opencodex-desktop" \
+            "$HOME/.local/share/applications/opencodex-desktop.desktop"
+          sudo apt-get update
+          sudo apt-get install -y xvfb x11-utils dbus-x11 libwebkit2gtk-4.1-0 libayatana-appindicator3-1
+          dbus-run-session -- xvfb-run -a python3 .github/scripts/smoke_opencodex.py --desktop
+
+      - name: Check macOS app signature and bundled CLI
+        if: runner.os == 'macOS'
+        run: |
+          test -d /Applications/OpenCodex.app
+          codesign --verify --deep --strict /Applications/OpenCodex.app
+          /Applications/OpenCodex.app/Contents/MacOS/ocx --version
+
+      - name: Check uninstall and preservation of settings
+        run: |
+          mkdir -p "$HOME/.opencodex"
+          touch "$HOME/.opencodex/tap-ci-preserve"
+          if [[ '${{ matrix.runner }}' != ubuntu-24.04-arm ]]; then
+            brew uninstall --cask chakachakakhan/tap/opencodex
+          fi
+          brew uninstall --formula chakachakakhan/tap/opencodex
+          for command in ocx opencodex opencodex-desktop; do
+            test ! -e "$(brew --prefix)/bin/$command"
+            test ! -L "$(brew --prefix)/bin/$command"
+          done
+          if [[ '${{ matrix.runner }}' == ubuntu-24.04 ]]; then
+            test ! -e "$HOME/.local/share/applications/opencodex-desktop.desktop"
+            test ! -e "$HOME/.local/share/icons/opencodex-desktop.png"
+          elif [[ '${{ runner.os }}' == macOS ]]; then
+            test ! -e /Applications/OpenCodex.app
+          fi
+          test -f "$HOME/.opencodex/tap-ci-preserve"

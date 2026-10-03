@@ -1,11 +1,12 @@
 [![Installation checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate.yml)
 [![Update checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update.yml)
 [![Thorium update checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update-thorium.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update-thorium.yml)
+[![OpenCodex checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-opencodex.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-opencodex.yml)
 
 this is my personal tap for my homebrew casks, feel free to use it yourself, fork 
 it, whatever, no promise no warranty etc
 
-right now its the chatgpt app by openai and thorium reader by edrlab . it takes the 
+right now its the chatgpt app by openai, thorium reader by edrlab, and opencodex . it takes the
 apps direct from the publisher, turns it into casks, and in theory should update 
 automatically with new updates. we'll see how that goes... 
 
@@ -53,4 +54,39 @@ thorium that includes its default book library and config. for chatgpt
 it includes chatgpt and codex configs and caches. zap won't hit custom data 
 locations.
 
+## OpenCodex
 
+opencodex is [lidge-jun/opencodex](https://github.com/lidge-jun/opencodex).
+the desktop app works on mac (intel and apple silicon) and linux intel/amd.
+the linux appimage is extracted so it doesn't need fuse. upstream doesn't have
+a linux arm desktop build yet.
+
+```sh
+brew install --cask chakachakakhan/tap/opencodex
+```
+
+on linux launch it from the app menu or run `opencodex-desktop`. on mac open
+OpenCodex from Applications. the desktop comes with its own proxy runtime.
+
+if you want the separate cli too, this supports mac and linux on intel/amd and arm:
+
+```sh
+brew install --formula chakachakakhan/tap/opencodex
+ocx init
+ocx start
+```
+
+the cli also has the `opencodex` command. its web dashboard is at
+http://localhost:10100. desktop and cli use the same default opencodex settings.
+
+the tap checks releases every six hours and merges routine updates after the
+install checks pass. no pr merging needed. update your machine through homebrew:
+
+```sh
+brew update
+brew upgrade --cask chakachakakhan/tap/opencodex
+brew upgrade --formula chakachakakhan/tap/opencodex
+```
+
+ordinary uninstall keeps your settings. desktop `--zap` removes the listed
+opencodex data including `~/.opencodex`, which the cli also uses.

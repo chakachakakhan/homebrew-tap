@@ -1,0 +1,44 @@
+name: Merge validated OpenCodex update
+
+on:
+  workflow_dispatch:
+    inputs:
+      validation_run_id:
+        description: Installation run to verify before merging
+        required: true
+        type: string
+  workflow_run:
+    workflows: [Validate OpenCodex]
+    branches: [automation/update-opencodex]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: update-casks
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.event == 'workflow_dispatch' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    steps:
+      # Always load policy from trusted main, never from the update PR.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - name: Merge the exact tested metadata update
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: python3 .github/scripts/merge_opencodex.py
