@@ -44,7 +44,9 @@ jobs:
         run: |
           brew readall --aliases --os=all --arch=all chakachakakhan/tap
           brew style Formula/opencodex.rb Casks/opencodex-desktop.rb
-          brew audit --strict chakachakakhan/tap/opencodex
+          # One explicit version drives all four interpolated URLs. The updater
+          # validates it; Homebrew's redundant-version lint dislikes this layout.
+          brew audit --strict --except=version chakachakakhan/tap/opencodex
           if [[ '${{ matrix.runner }}' != ubuntu-24.04-arm ]]; then
             brew audit --cask --new --strict chakachakakhan/tap/opencodex-desktop
           fi
