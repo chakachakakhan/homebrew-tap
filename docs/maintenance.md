@@ -83,3 +83,31 @@ need copies of the app or a separate release workflow to keep Homebrew working.
 References: [Homebrew tap maintenance](https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap),
 [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases),
 and [GitHub Packages](https://docs.github.com/en/packages/learn-github-packages/introduction-to-github-packages).
+
+## OpenCodex
+
+`Formula/opencodex.rb` installs the publisher's standalone Bun runtime, dashboard,
+and native keyring addon together in libexec. It exposes `ocx` and `opencodex`.
+`Casks/opencodex-desktop.rb` installs the universal macOS DMG or extracts the Linux
+x86_64 AppImage, preserving AppRun and its bundled libraries and sidecar. There is
+no Linux ARM desktop asset upstream. Downloads stay on lidge-jun/opencodex Releases.
+
+The separate **Update OpenCodex packages** workflow checks every six hours. It
+accepts only a complete stable release with all six expected assets, exact origin
+URLs, and GitHub's SHA-256 digests. Both packages advance to the same version.
+The existing ChatGPT keepalive also keeps this schedule active.
+
+**Validate OpenCodex** installs and tests the CLI, proxy health, and dashboard
+assets on Ubuntu x86_64/ARM and macOS Apple Silicon/Intel. It installs the desktop
+where available, checks a Linux desktop window and bundled runtime under Xvfb,
+verifies the macOS app signature and bundled CLI, and verifies ordinary uninstall
+preserves settings. A macOS GUI window is not exercised by these hosted checks.
+
+The updater explicitly dispatches validation and **Merge validated OpenCodex
+update** using the validation run ID. The trusted main-branch merger requires
+all five jobs to pass on the exact current PR head, a same-repository bot PR that
+includes current main, and only higher versions/checksums in the two existing
+recipes. Code, URL, architecture, or installation changes cannot merge under
+that policy. Same-version rebuilds are rejected. All updaters and mergers use
+the existing shared concurrency group. Disable the OpenCodex merger to pause
+its automatic merges without affecting the other apps.
