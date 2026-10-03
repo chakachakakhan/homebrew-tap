@@ -125,6 +125,8 @@ and uses a normal system-Python RPC proxy to catch environment contamination.
 The Homebrew command adds the actual Homebrew prefix to PATH before
 running AppRun by its full path; desktop-menu launches can therefore find the
 separately installed `omp` from `can1357/tap`.
+Project folder arguments are resolved before AppRun changes its working
+directory, so terminal launches such as `omp-desktop .` open the intended folder.
 
 Tauri's fixed-width `__TAURI_BUNDLE_TYPE_VAR_APP` marker is replaced with
 `__TAURI_BUNDLE_TYPE_VAR_UNK` in the extracted executable. This switches the
@@ -149,8 +151,9 @@ rejected. A bot update can change only the existing cask's version and checksum.
 
 Validation installs the current upstream Homebrew OMP, checks the desktop
 integration and notify-only marker, then opens the GUI under Xvfb with a minimal
-launcher PATH. A transparent test proxy observes a successful RPC get_state
-response from the real OMP engine; it sends no model prompt and uses no provider
+launcher PATH and a relative project argument. A transparent test proxy observes
+a successful RPC get_state response from the real OMP engine in that project;
+it sends no model prompt and uses no provider
 credentials. Ordinary uninstall must remove the desktop artifacts while
 preserving both desktop settings and OMP data.
 

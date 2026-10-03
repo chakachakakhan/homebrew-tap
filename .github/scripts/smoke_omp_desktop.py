@@ -49,6 +49,7 @@ def proxy():
                 record = {
                     "command": "get_state", "success": response.get("success"),
                     "has_model": bool((response.get("data") or {}).get("model")),
+                    "has_project": f"--cwd={os.environ['OMP_TAP_SMOKE_PROJECT']}" in args,
                 }
                 descriptor = os.open(os.environ["OMP_TAP_SMOKE_RPC_LOG"],
                                      os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
@@ -79,7 +80,7 @@ def inspect_installation(prefix):
         raise RuntimeError("Homebrew must own updates; the bundle marker changed upstream")
     text = launcher.read_text()
     if (f'export PATH="{prefix}/bin:{prefix}/sbin:' not in text
-            or f'exec "{app}/AppRun" "$@"' not in text):
+            or f'exec "{app}/AppRun" "${{args[@]}}"' not in text):
         raise RuntimeError("The launcher must discover Homebrew OMP and preserve project arguments")
     shim = (app / "AppRun.wrapped").read_bytes()
     if (b"PYTHONHOME" in shim or b"PYTHONPATH" in shim
@@ -97,7 +98,7 @@ def connected(log_path):
         except ValueError:
             continue
         if (record.get("command") == "get_state" and record.get("success") is True
-                and record.get("has_model") is True):
+                and record.get("has_model") is True and record.get("has_project") is True):
             return True
     return False
 
@@ -127,6 +128,7 @@ def smoke(prefix):
         env["OMP_TAP_SMOKE_PROXY"] = "1"
         env["OMP_TAP_SMOKE_ENGINE"] = str(real_engine)
         env["OMP_TAP_SMOKE_RPC_LOG"] = str(root / "rpc.jsonl")
+        env["OMP_TAP_SMOKE_PROJECT"] = str(project)
         script = Path(__file__).resolve()
         engine.rename(backup)
         process = None
@@ -138,8 +140,8 @@ def smoke(prefix):
             )
             engine.chmod(0o755)
             with (root / "launch.log").open("w+") as log:
-                process = subprocess.Popen([str(prefix / "bin/omp-desktop"), str(project)],
-                                           env=env, stdout=log, stderr=subprocess.STDOUT,
+                process = subprocess.Popen([str(prefix / "bin/omp-desktop"), "project"],
+                                           cwd=root, env=env, stdout=log, stderr=subprocess.STDOUT,
                                            start_new_session=True)
                 try:
                     deadline = time.monotonic() + 90

@@ -42,9 +42,17 @@ cask "omp-desktop" do
               "__TAURI_BUNDLE_TYPE_VAR_APP", "__TAURI_BUNDLE_TYPE_VAR_UNK"
 
     write_file "omp-desktop-launcher", <<~SH
-      #!/bin/sh
+      #!/bin/bash
       export PATH="{{HOMEBREW_PREFIX}}/bin:{{HOMEBREW_PREFIX}}/sbin:${PATH:-/usr/bin:/bin}"
-      exec "{{staged_path}}/squashfs-root/AppRun" "$@"
+      # AppRun changes directory for WebKit; resolve project folders first.
+      args=()
+      for argument in "$@"; do
+        if [[ -d "$argument" ]]; then
+          argument="$(readlink -f -- "$argument")"
+        fi
+        args+=("$argument")
+      done
+      exec "{{staged_path}}/squashfs-root/AppRun" "${args[@]}"
     SH
     set_permissions "omp-desktop-launcher", "+x", recursive: false
 
