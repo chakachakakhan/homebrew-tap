@@ -128,6 +128,11 @@ Homebrew-managed payload. The replacement is audited and fails if the marker
 changes upstream. This is a packaging adjustment, not an application rebuild.
 The recipe registers a command, folder-aware desktop entry, and icon.
 
+The strict Homebrew audit excludes only `github_repository` and
+`token_bad_words`: this personal tap accepts the small upstream project and
+uses its desktop name to distinguish the separately installed OMP engine.
+The remaining recipe and artifact audits still run.
+
 `--zap` targets only `dev.ohMyPi.desktop` application data. It deliberately
 does not target `~/.omp`, shared credentials, saved sessions, or named profiles.
 

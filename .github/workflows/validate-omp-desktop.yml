@@ -39,7 +39,10 @@ jobs:
         run: |
           brew readall --aliases --os=all --arch=all chakachakakhan/tap
           brew style Casks/omp-desktop.rb
-          brew audit --cask --new --strict chakachakakhan/tap/omp-desktop
+          # This personal tap intentionally packages a small upstream project
+          # and keeps "desktop" in the name to distinguish the existing engine.
+          brew audit --cask --new --strict --except=github_repository,token_bad_words \
+            chakachakakhan/tap/omp-desktop
       - name: Install desktop and the upstream OMP engine
         run: |
           brew install can1357/tap/omp
