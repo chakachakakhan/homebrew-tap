@@ -116,8 +116,11 @@ its automatic merges without affecting the other apps.
 ## OMP Desktop
 
 `Casks/omp-desktop.rb` installs apoc's official Linux x86_64 AppImage after
-extraction, keeping its original AppRun and bundled libraries together without
-FUSE. The Homebrew command adds the actual Homebrew prefix to PATH before
+extraction, keeping its GTK setup and bundled libraries together without
+FUSE. AppRun runs the native executable with the bundled library path, bypassing
+the generic AppImage shim: that shim sets PYTHONHOME to a nonexistent bundled
+runtime and breaks external Python programs, including the RPC test proxy.
+The Homebrew command adds the actual Homebrew prefix to PATH before
 running AppRun by its full path; desktop-menu launches can therefore find the
 separately installed `omp` from `can1357/tap`.
 

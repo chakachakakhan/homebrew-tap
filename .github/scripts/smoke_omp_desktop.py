@@ -2,7 +2,6 @@
 
 import json
 import os
-import shutil
 import signal
 import subprocess
 import sys
@@ -82,6 +81,11 @@ def inspect_installation(prefix):
     if (f'export PATH="{prefix}/bin:{prefix}/sbin:' not in text
             or f'exec "{app}/AppRun" "$@"' not in text):
         raise RuntimeError("The launcher must discover Homebrew OMP and preserve project arguments")
+    app_run = (app / "AppRun").read_text()
+    if ('exec "$this_dir"/AppRun.wrapped "$@"' in app_run
+            or 'exec "$this_dir/usr/bin/omp-desktop" "$@"' not in app_run
+            or 'export LD_LIBRARY_PATH=' not in app_run):
+        raise RuntimeError("Use bundled GUI libraries without redirecting external Python tools")
     print("Extracted desktop, Homebrew PATH, and notify-only update marker verified")
 
 

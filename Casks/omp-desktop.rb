@@ -22,12 +22,19 @@ cask "omp-desktop" do
            target: "#{Dir.home}/.local/share/icons/omp-desktop.png"
 
   preflight_steps do
-    # Preserve the upstream launcher and bundled libraries without requiring FUSE.
+    # Preserve the upstream GTK setup and bundled libraries without requiring FUSE.
     remove "squashfs-root", recursive: true
     set_permissions "OMP.Desktop_{{version}}_amd64.AppImage", "+x", recursive: false
     run "OMP.Desktop_{{version}}_amd64.AppImage", args: ["--appimage-extract"],
                                                base: :staged_path, chdir: "{{staged_path}}"
     remove "OMP.Desktop_{{version}}_amd64.AppImage"
+
+    # The generic AppRun shim forces system Python into a nonexistent bundled
+    # runtime. Keep GTK's hook and library setup, then run the native app directly.
+    inreplace "squashfs-root/AppRun", 'exec "$this_dir"/AppRun.wrapped "$@"', <<~SH
+      export LD_LIBRARY_PATH="$this_dir/usr/lib:$this_dir/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}"
+      exec "$this_dir/usr/bin/omp-desktop" "$@"
+    SH
 
     # Tauri's fixed-width bundle marker controls whether its updater replaces
     # this executable. An extracted Homebrew installation must be notify-only.
