@@ -163,3 +163,54 @@ an unchanged current main base, and a strictly newer metadata-only cask change
 permit automatic merging. It shares the existing update concurrency group and
 keepalive. Disable **Merge validated OMP Desktop update** to pause its automatic
 merges without changing other apps.
+
+## Emacs
+
+`Formula/emacs-pgtk.rb` builds the current stable GNU source release with PGTK,
+ahead-of-time native Lisp compilation, tree-sitter, SQLite, dynamic modules,
+GnuTLS, and image support. Dependencies come from Homebrew. Its standard
+`service` stanza runs `emacs --fg-daemon`; the package does not enable the service
+or modify Emacs/Doom configuration during installation.
+
+`Casks/emacs-pgtk-linux.rb` depends on that formula and takes only GNU's desktop
+entries and SVG icon from the matching source archive. These are Homebrew-managed
+artifacts in `~/.local/share`. The formula owns all executables, Lisp, dump files,
+libraries, and manuals. Cask removal leaves the formula installed, following
+Homebrew's usual dependency handling. There is no AppImage or custom application
+launcher and no global library-path or Emacs-path environment setup.
+
+**Validate Emacs** uses Homebrew's test-bot to build, bottle, reinstall the bottle,
+and test linkage on Ubuntu 24.04 Intel and ARM. The formula test actually compiles
+and executes a new native Lisp function after installation. Additional isolated
+checks exercise the GUI, daemon, graphical client, and terminal client under
+Xvfb and a headless Weston compositor. The generated service command and normal
+uninstall/settings preservation are checked. Main-branch pushes repeat the
+runtime checks using published bottles with `--force-bottle`, so unavailable
+downloads cannot silently fall back to a source build.
+
+**Update stable Emacs** checks GNU's official source index every six hours. It
+accepts numeric stable releases, excludes development/pre-release versions with
+a zero minor version, rejects downgrades, and changes both source recipes to the
+same downloaded SHA-256. Existing bottle metadata is removed when the source
+version changes. An unchanged upstream version does not trigger compilation.
+The existing keepalive maintains the schedule.
+
+**Publish tested Emacs bottles** runs from trusted main for routine updates. It
+requires a same-repository bot PR that contains current main, exactly the expected
+source/checksum changes, and all three successful jobs and both bottle artifacts
+at the exact current PR head. It calls Homebrew's standard `brew pr-pull` with
+`--head-sha` and the Emacs workflow, uploads bottles to GitHub Releases, and pushes
+the resulting source and bottle metadata together. It shares the existing update
+concurrency group only during publication, allowing other apps to update while
+Emacs compiles. Explicit workflow dispatch handles GitHub's suppression of bot
+workflow events and retries pending updates.
+
+The owner can publish an initial release or reviewed packaging correction by
+manually dispatching the publisher with a PR number and its exact head SHA after
+validation passes. Such changes cannot publish automatically under the stable
+update policy. Disable the Emacs publisher to pause automatic publication.
+
+GNU source archives remain at GNU's mirrors. Compiled bottles are the first
+tap-built application artifacts in this repository and require GitHub Releases.
+Their matching source version, checksum, formula, and build history remain
+available in the tap, rather than relying on another packager's release schedule.
