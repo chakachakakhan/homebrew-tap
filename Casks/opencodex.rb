@@ -1,6 +1,6 @@
 cask "opencodex" do
-  version "2.81.0"
-  sha256 "7869a940262b68341d76f92a77fd1d608f49dd9552afbf1ba929439bfb19e8cd"
+  version "2.82.0"
+  sha256 "30641ed90f14d6ac0be835abb20bdbdfaf8c78fa57a94933a522e56675a4cb22"
 
   url "https://github.com/lidge-jun/opencodex/releases/download/v#{version}/OpenCodex-#{version}-linux-x86_64.AppImage"
   name "OpenCodex"
