@@ -1,15 +1,15 @@
 class Opencodex < Formula
   desc "Provider proxy for Codex, Claude Code, and other coding clients"
   homepage "https://github.com/lidge-jun/opencodex"
-  version "2.83.0"
+  version "2.84.0"
   license "MIT"
 
   if Hardware::CPU.arm?
     url "https://github.com/lidge-jun/opencodex/releases/download/v#{version}/ocx-#{version}-bun-linux-arm64.tar.gz"
-    sha256 "a759cf1c3625be4d33282099818b0c489fd549a4d3e39a206d158c888167072b"
+    sha256 "a3ef23476a4141512b0c64193563c9f584ceae9a7558d8d6b0c9a9a73968c499"
   else
     url "https://github.com/lidge-jun/opencodex/releases/download/v#{version}/ocx-#{version}-bun-linux-x64.tar.gz"
-    sha256 "66d17445442592235aea5f0bbe7b2b81604e7d8ab26daba48dcf49a08cfaf04d"
+    sha256 "a0cc0da865e1330144d1593c1715f66d75acd23ba47122d942e035ac61fde80e"
   end
 
   depends_on :linux
