@@ -1,6 +1,6 @@
 cask "omp-desktop" do
-  version "0.9.0"
-  sha256 "ab72eff6afaab633deff34fc2ef838015571d335c7a5555d0d2dc85d6dd196df"
+  version "0.10.0"
+  sha256 "e3127186d4688f941b9720f07fb9ef7a9ca3eea3303371325ae7108c4dedabf9"
 
   url "https://github.com/apoc/omp-desktop/releases/download/v#{version}/OMP.Desktop_#{version}_amd64.AppImage"
   name "OMP Desktop"
