@@ -1,0 +1,72 @@
+name: Update stable Emacs
+
+on:
+  schedule:
+    - cron: "47 */6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: update-casks
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+        with:
+          ref: ${{ github.ref }}
+      - name: Check GNU's official stable source releases
+        run: python3 .github/scripts/update_emacs.py
+      - name: Open or refresh the source update
+        if: github.ref == 'refs/heads/main'
+        id: pull-request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.0.0
+        with:
+          add-paths: |
+            Formula/emacs-pgtk.rb
+            Casks/emacs-pgtk-linux.rb
+          branch: automation/update-emacs
+          commit-message: "emacs-pgtk: update stable GNU source"
+          title: "emacs-pgtk: update stable GNU source"
+          body: |
+            Update the formula and desktop cask to the same official stable GNU
+            release and source checksum. Remove the previous version's bottle
+            metadata so it cannot be used with the new source.
+
+            GitHub builds and tests Intel and ARM Homebrew bottles, native Lisp
+            compilation, the daemon, terminal client, X11, and native Wayland.
+            Homebrew's standard pr-pull publisher then publishes the exact tested
+            source revision and its bottles automatically.
+      - name: Dispatch bottle checks and the trusted publisher
+        if: steps.pull-request.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          UPDATE_SHA: ${{ steps.pull-request.outputs.pull-request-head-sha }}
+        run: |
+          [[ "$UPDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          gh workflow run validate-emacs.yml --ref automation/update-emacs
+          for attempt in {1..12}; do
+            run_id="$(gh api \
+              "repos/$GH_REPO/actions/workflows/validate-emacs.yml/runs?event=workflow_dispatch&branch=automation/update-emacs&head_sha=$UPDATE_SHA&per_page=1" \
+              --jq '.workflow_runs[0].id // empty')"
+            if [[ -n "$run_id" ]]; then
+              gh workflow run publish-emacs.yml --ref main --field validation_run_id="$run_id"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo 'Could not find the dispatched Emacs bottle checks' >&2
+          exit 1

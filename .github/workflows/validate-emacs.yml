@@ -1,0 +1,144 @@
+name: Validate Emacs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Formula/emacs-pgtk.rb
+      - Casks/emacs-pgtk-linux.rb
+      - .github/workflows/validate-emacs.yml
+      - .github/scripts/*emacs*
+  pull_request:
+    paths:
+      - Formula/emacs-pgtk.rb
+      - Casks/emacs-pgtk-linux.rb
+      - .github/workflows/validate-emacs.yml
+      - .github/workflows/publish-emacs.yml
+      - .github/workflows/update-emacs.yml
+      - .github/scripts/*emacs*
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: validate-emacs-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+jobs:
+  policy:
+    name: Emacs update policy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+
+  build:
+    name: Emacs bottle (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Set up Homebrew and the tap
+        uses: Homebrew/actions/setup-homebrew@e99025eb970cfa124b8284a35463d87426917478 # 2026.09.28.1
+        with:
+          token: ${{ github.token }}
+
+      - name: Check recipes
+        run: |
+          brew readall --aliases --os=all --arch=all chakachakakhan/tap
+          brew style Formula/emacs-pgtk.rb Casks/emacs-pgtk-linux.rb
+          brew audit --formula --strict chakachakakhan/tap/emacs-pgtk
+          brew audit --cask --new --strict chakachakakhan/tap/emacs-pgtk-linux
+
+      # Homebrew's test-bot builds, bottles, uninstalls, pours the bottle,
+      # checks linkage, and runs the formula's real native-compilation test.
+      - run: brew test-bot --only-cleanup-before
+        if: github.event_name != 'push'
+      - run: brew test-bot --only-setup
+        if: github.event_name != 'push'
+      - name: Build and test the bottle
+        if: github.event_name != 'push'
+        run: |
+          brew test-bot --only-formulae --skip-dependents --testing-formulae=chakachakakhan/tap/emacs-pgtk
+          test -n "$(find . -maxdepth 1 -name 'emacs-pgtk--*.bottle.tar.gz' -print -quit)"
+
+      - name: Install the published bottle as a user would
+        if: github.event_name == 'push'
+        run: brew install --force-bottle chakachakakhan/tap/emacs-pgtk
+
+      - name: Install desktop integration around the poured bottle
+        run: |
+          brew install --only-dependencies chakachakakhan/tap/emacs-pgtk
+          brew install --cask chakachakakhan/tap/emacs-pgtk-linux
+          brew test chakachakakhan/tap/emacs-pgtk
+          brew linkage --test chakachakakhan/tap/emacs-pgtk
+          test -s "$HOME/.local/share/icons/emacs.svg"
+          grep -Fx "Exec=$(brew --prefix)/opt/emacs-pgtk/bin/emacs %F" \
+            "$HOME/.local/share/applications/emacs.desktop"
+          sudo apt-get update
+          sudo apt-get install -y xvfb x11-utils dbus-x11 weston desktop-file-utils
+          desktop-file-validate "$HOME/.local/share/applications/emacs.desktop"
+          desktop-file-validate "$HOME/.local/share/applications/emacsclient.desktop"
+
+      - name: Exercise GUI, daemon, and terminal client on X11
+        run: dbus-run-session -- xvfb-run -a python3 .github/scripts/smoke_emacs.py
+
+      - name: Exercise GUI and daemon client on native Wayland
+        run: dbus-run-session -- python3 .github/scripts/smoke_emacs.py --wayland
+
+      - name: Check uninstall preserves Emacs and Doom settings
+        run: |
+          for directory in "$HOME/.emacs.d" "$HOME/.config/emacs" "$HOME/.config/doom"; do
+            mkdir -p "$directory"
+            touch "$directory/tap-ci-preserve"
+          done
+          brew uninstall --cask chakachakakhan/tap/emacs-pgtk-linux
+          test -x "$(brew --prefix emacs-pgtk)/bin/emacs"
+          brew uninstall --formula chakachakakhan/tap/emacs-pgtk
+          for artifact in \
+            "$(brew --prefix)/bin/emacs" \
+            "$(brew --prefix)/bin/emacsclient" \
+            "$HOME/.local/share/applications/emacs.desktop" \
+            "$HOME/.local/share/applications/emacsclient.desktop" \
+            "$HOME/.local/share/icons/emacs.svg"; do
+            test ! -e "$artifact"
+            test ! -L "$artifact"
+          done
+          for directory in "$HOME/.emacs.d" "$HOME/.config/emacs" "$HOME/.config/doom"; do
+            test -f "$directory/tap-ci-preserve"
+          done
+
+      - name: Upload tested bottles
+        if: github.event_name != 'push'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: bottles_${{ matrix.runner }}
+          path: '*.bottle.*'
+          if-no-files-found: error
+
+      - name: Upload build logs
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: emacs-logs_${{ matrix.runner }}
+          path: |
+            ~/Library/Logs/Homebrew/emacs-pgtk
+            brew-test-bot-*.txt
+            brew-test-bot-*.xml
