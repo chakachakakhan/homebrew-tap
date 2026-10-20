@@ -3,11 +3,13 @@
 [![Thorium update checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update-thorium.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update-thorium.yml)
 [![OpenCodex checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-opencodex.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-opencodex.yml)
 [![OMP Desktop checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-omp-desktop.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-omp-desktop.yml)
+[![Emacs checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-emacs.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-emacs.yml)
 
 this is my personal tap for my homebrew casks, feel free to use it yourself, fork 
 it, whatever, no promise no warranty etc
 
-right now its the chatgpt app by openai, thorium reader by edrlab, opencodex, and omp desktop . it takes the
+right now its the chatgpt app by openai, thorium reader by edrlab, opencodex,
+omp desktop, and emacs with pgtk. it takes the
 apps direct from the publisher, turns it into casks, and in theory should update 
 automatically with new updates. we'll see how that goes... 
 
@@ -135,14 +137,14 @@ lisp compilation, tree-sitter, and the cli and daemon.
 brew install --cask chakachakakhan/tap/emacs-pgtk-linux
 ```
 
-the cask adds the app menu entries and icon. it installs the `emacs-pgtk` formula
+the cask adds the app menu entries and icon. it installs the `emacs` formula
 as a dependency, which supplies `emacs`, `emacsclient`, and the other commands.
-for just the formula: `brew install chakachakakhan/tap/emacs-pgtk`.
+for just the formula: `brew install chakachakakhan/tap/emacs`.
 
 to start the daemon at login:
 
 ```sh
-brew services start chakachakakhan/tap/emacs-pgtk
+brew services start chakachakakhan/tap/emacs
 emacsclient -c
 ```
 
@@ -151,7 +153,7 @@ the same daemon. using the service is optional; plain `emacs` also works.
 
 ```sh
 brew update
-brew upgrade chakachakakhan/tap/emacs-pgtk
+brew upgrade chakachakakhan/tap/emacs
 brew upgrade --cask chakachakakhan/tap/emacs-pgtk-linux
 ```
 
@@ -159,7 +161,7 @@ routine stable updates build, test, and publish automatically. ordinary uninstal
 keeps emacs and doom settings. remove both layers to remove the whole installation:
 
 ```sh
-brew services stop chakachakakhan/tap/emacs-pgtk
+brew services stop chakachakakhan/tap/emacs
 brew uninstall --cask chakachakakhan/tap/emacs-pgtk-linux
-brew uninstall chakachakakhan/tap/emacs-pgtk
+brew uninstall chakachakakhan/tap/emacs
 ```

@@ -166,11 +166,16 @@ merges without changing other apps.
 
 ## Emacs
 
-`Formula/emacs-pgtk.rb` builds the current stable GNU source release with PGTK,
+`Formula/emacs.rb` builds the current stable GNU source release with PGTK,
 ahead-of-time native Lisp compilation, tree-sitter, SQLite, dynamic modules,
 GnuTLS, and image support. Dependencies come from Homebrew. Its standard
 `service` stanza runs `emacs --fg-daemon`; the package does not enable the service
 or modify Emacs/Doom configuration during installation.
+
+The formula deliberately uses the standard `emacs` token. This matches
+Homebrew/core and preserves Homebrew's intended global `site-lisp` integration
+for Emacs itself. The dependent cask keeps the more descriptive
+`emacs-pgtk-linux` name for desktop integration.
 
 `Casks/emacs-pgtk-linux.rb` depends on that formula and takes only GNU's desktop
 entries and SVG icon from the matching source archive. These are Homebrew-managed
@@ -188,7 +193,7 @@ uninstall/settings preservation are checked. Main-branch pushes repeat the
 runtime checks using published bottles with `--force-bottle`, so unavailable
 downloads cannot silently fall back to a source build.
 
-**Update stable Emacs** checks GNU's official source index every six hours. It
+**Update stable Emacs** checks GNU's official source index once a day. It
 accepts numeric stable releases, excludes development/pre-release versions with
 a zero minor version, rejects downgrades, and changes both source recipes to the
 same downloaded SHA-256. Existing bottle metadata is removed when the source

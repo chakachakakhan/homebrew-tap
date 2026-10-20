@@ -4,18 +4,20 @@ on:
   push:
     branches: [main]
     paths:
-      - Formula/emacs-pgtk.rb
+      - Formula/emacs.rb
       - Casks/emacs-pgtk-linux.rb
       - .github/workflows/validate-emacs.yml
       - .github/scripts/*emacs*
+      - .github/scripts/merge_update.py
   pull_request:
     paths:
-      - Formula/emacs-pgtk.rb
+      - Formula/emacs.rb
       - Casks/emacs-pgtk-linux.rb
       - .github/workflows/validate-emacs.yml
       - .github/workflows/publish-emacs.yml
       - .github/workflows/update-emacs.yml
       - .github/scripts/*emacs*
+      - .github/scripts/merge_update.py
   workflow_dispatch:
 
 permissions: {}
@@ -63,8 +65,8 @@ jobs:
       - name: Check recipes
         run: |
           brew readall --aliases --os=all --arch=all chakachakakhan/tap
-          brew style Formula/emacs-pgtk.rb Casks/emacs-pgtk-linux.rb
-          brew audit --formula --strict chakachakakhan/tap/emacs-pgtk
+          brew style Formula/emacs.rb Casks/emacs-pgtk-linux.rb
+          brew audit --formula --strict chakachakakhan/tap/emacs
           brew audit --cask --new --strict chakachakakhan/tap/emacs-pgtk-linux
 
       # Homebrew's test-bot builds, bottles, uninstalls, pours the bottle,
@@ -76,21 +78,21 @@ jobs:
       - name: Build and test the bottle
         if: github.event_name != 'push'
         run: |
-          brew test-bot --only-formulae --skip-dependents --testing-formulae=chakachakakhan/tap/emacs-pgtk
-          test -n "$(find . -maxdepth 1 -name 'emacs-pgtk--*.bottle.tar.gz' -print -quit)"
+          brew test-bot --only-formulae --skip-dependents --testing-formulae=chakachakakhan/tap/emacs
+          test -n "$(find . -maxdepth 1 -name 'emacs--*.bottle.tar.gz' -print -quit)"
 
       - name: Install the published bottle as a user would
         if: github.event_name == 'push'
-        run: brew install --force-bottle chakachakakhan/tap/emacs-pgtk
+        run: brew install --force-bottle chakachakakhan/tap/emacs
 
       - name: Install desktop integration around the poured bottle
         run: |
-          brew install --only-dependencies chakachakakhan/tap/emacs-pgtk
+          brew install --only-dependencies chakachakakhan/tap/emacs
           brew install --cask chakachakakhan/tap/emacs-pgtk-linux
-          brew test chakachakakhan/tap/emacs-pgtk
-          brew linkage --test chakachakakhan/tap/emacs-pgtk
+          brew test chakachakakhan/tap/emacs
+          brew linkage --test chakachakakhan/tap/emacs
           test -s "$HOME/.local/share/icons/emacs.svg"
-          grep -Fx "Exec=$(brew --prefix)/opt/emacs-pgtk/bin/emacs %F" \
+          grep -Fx "Exec=$(brew --prefix)/opt/emacs/bin/emacs %F" \
             "$HOME/.local/share/applications/emacs.desktop"
           sudo apt-get update
           sudo apt-get install -y xvfb x11-utils dbus-x11 weston desktop-file-utils
@@ -110,8 +112,8 @@ jobs:
             touch "$directory/tap-ci-preserve"
           done
           brew uninstall --cask chakachakakhan/tap/emacs-pgtk-linux
-          test -x "$(brew --prefix emacs-pgtk)/bin/emacs"
-          brew uninstall --formula chakachakakhan/tap/emacs-pgtk
+          test -x "$(brew --prefix chakachakakhan/tap/emacs)/bin/emacs"
+          brew uninstall --formula chakachakakhan/tap/emacs
           for artifact in \
             "$(brew --prefix)/bin/emacs" \
             "$(brew --prefix)/bin/emacsclient" \
@@ -139,6 +141,6 @@ jobs:
         with:
           name: emacs-logs_${{ matrix.runner }}
           path: |
-            ~/Library/Logs/Homebrew/emacs-pgtk
+            ~/.cache/Homebrew/Logs/emacs
             brew-test-bot-*.txt
             brew-test-bot-*.xml

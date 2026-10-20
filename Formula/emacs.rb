@@ -1,4 +1,4 @@
-class EmacsPgtk < Formula
+class Emacs < Formula
   desc "GNU Emacs with native Wayland, native compilation, and tree-sitter"
   homepage "https://www.gnu.org/software/emacs/"
   url "https://ftpmirror.gnu.org/emacs/emacs-31.1.tar.xz"
@@ -35,8 +35,6 @@ class EmacsPgtk < Formula
   depends_on "tree-sitter"
   depends_on "webp"
   depends_on "zlib-ng-compat"
-
-  conflicts_with "emacs", because: "both install emacs, emacsclient, and etags"
 
   def install
     # libgccjit uses GCC's version-independent Homebrew library directory.

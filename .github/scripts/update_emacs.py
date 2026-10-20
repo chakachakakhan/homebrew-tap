@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-FORMULA = "Formula/emacs-pgtk.rb"
+FORMULA = "Formula/emacs.rb"
 CASK = "Casks/emacs-pgtk-linux.rb"
 PACKAGES = {FORMULA, CASK}
 GNU = "https://ftp.gnu.org/gnu/emacs/"

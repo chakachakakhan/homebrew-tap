@@ -15,7 +15,7 @@ cask "emacs-pgtk-linux" do
     strategy :page_match
   end
 
-  depends_on formula: "chakachakakhan/tap/emacs-pgtk"
+  depends_on formula: "chakachakakhan/tap/emacs"
   depends_on linux: :any
 
   artifact "emacs-#{version}/etc/emacs.desktop",
@@ -27,17 +27,17 @@ cask "emacs-pgtk-linux" do
 
   preflight_steps do
     inreplace "emacs-{{version}}/etc/emacs.desktop", "Exec=emacs %F",
-              "Exec={{HOMEBREW_PREFIX}}/opt/emacs-pgtk/bin/emacs %F"
+              "Exec={{HOMEBREW_PREFIX}}/opt/emacs/bin/emacs %F"
     inreplace "emacs-{{version}}/etc/emacsclient.desktop", "emacsclient --",
-              "{{HOMEBREW_PREFIX}}/opt/emacs-pgtk/bin/emacsclient --"
+              "{{HOMEBREW_PREFIX}}/opt/emacs/bin/emacsclient --"
     inreplace "emacs-{{version}}/etc/emacsclient.desktop", "Exec=emacs %F",
-              "Exec={{HOMEBREW_PREFIX}}/opt/emacs-pgtk/bin/emacs %F"
+              "Exec={{HOMEBREW_PREFIX}}/opt/emacs/bin/emacs %F"
   end
 
   caveats <<~EOS
-    Emacs, emacsclient, and the daemon are supplied by the emacs-pgtk formula.
+    Emacs, emacsclient, and the daemon are supplied by the emacs formula.
     To start the daemon at login:
-      brew services start chakachakakhan/tap/emacs-pgtk
+      brew services start chakachakakhan/tap/emacs
     Upgrade both the formula and this desktop integration with brew upgrade.
     Uninstalling this cask removes the desktop entries and icon; uninstall the
     formula separately to remove Emacs itself. Emacs and Doom settings are preserved.
