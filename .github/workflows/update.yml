@@ -108,8 +108,8 @@ jobs:
           commit-message: "chatgpt-linux: update official package metadata"
           title: "chatgpt-linux: update official package metadata"
           body: |
-            ChatGPT update notice for @${{ github.repository_owner }}.
-            No review or approval is needed for this routine update.
+            Routine automated ChatGPT cask update. No review or approval is
+            needed, and the repository owner is intentionally not mentioned.
 
             Update the version and both architecture checksums from OpenAI's
             official Linux package indexes. Downloads remain on OpenAI's origin.
