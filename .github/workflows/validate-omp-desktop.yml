@@ -3,7 +3,17 @@ name: Validate OMP Desktop
 on:
   push:
     branches: [main]
+    paths:
+      - Casks/omp-desktop.rb
+      - .github/scripts/*omp_desktop*
+      - .github/scripts/merge_update.py
+      - .github/workflows/*omp-desktop*
   pull_request:
+    paths:
+      - Casks/omp-desktop.rb
+      - .github/scripts/*omp_desktop*
+      - .github/scripts/merge_update.py
+      - .github/workflows/*omp-desktop*
   workflow_dispatch:
 
 permissions:
