@@ -47,6 +47,7 @@ class Emacs < Formula
       --with-modules
       --with-gnutls
       --with-dbus
+      --with-systemduserunitdir=no
       --with-xml2
       --with-sqlite3
       --without-ns
@@ -67,6 +68,14 @@ class Emacs < Formula
     system "./configure", *args
     system "make"
     system "make", "install"
+
+    # This cache is shared by every linked GSettings provider and must be
+    # regenerated after linking rather than owned by an individual keg.
+    rm share/"glib-2.0/schemas/gschemas.compiled"
+  end
+
+  post_install_steps do
+    compile_gsettings_schemas
   end
 
   service do
@@ -81,6 +90,7 @@ class Emacs < Formula
     %w[PGTK NATIVE_COMP TREE_SITTER GNUTLS LIBXML2 MODULES SQLITE3].each do |feature|
       assert_match feature, features
     end
+    assert_match "org.gnu.emacs.defaults", shell_output("#{formula_opt_bin("glib")}/gsettings list-schemas")
 
     # Loading comp alone misses broken compiler/linker lookup after bottling.
     (testpath/"native-test.el").write "(defun tap-native-test () (+ 20 22))\n"
