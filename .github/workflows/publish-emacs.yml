@@ -1,0 +1,102 @@
+name: Publish tested Emacs bottles
+
+on:
+  workflow_dispatch:
+    inputs:
+      validation_run_id:
+        description: Emacs validation run (routine updates)
+        type: string
+      pull_request:
+        description: PR number (manual initial release or packaging correction)
+        type: string
+      head_sha:
+        description: Exact reviewed PR head SHA (required for manual publication)
+        type: string
+  workflow_run:
+    workflows: [Validate Emacs]
+    branches: [automation/update-emacs]
+    types: [completed]
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+jobs:
+  prepare:
+    if: >-
+      (github.event_name == 'workflow_dispatch' &&
+       (github.ref == 'refs/heads/main' || github.actor == github.repository_owner)) ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.event == 'workflow_dispatch' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    outputs:
+      pull_request: ${{ steps.policy.outputs.pull_request }}
+      head_sha: ${{ steps.policy.outputs.head_sha }}
+      run_id: ${{ steps.policy.outputs.run_id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - name: Wait for validation and verify the publication policy
+        id: policy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: python3 .github/scripts/publish_emacs.py
+
+  publish:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # Serialize writes with the existing tap updaters only after the build has finished.
+    concurrency:
+      group: update-casks
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      checks: read
+      contents: write
+      pull-requests: write
+      issues: read
+    steps:
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@e99025eb970cfa124b8284a35463d87426917478 # 2026.09.28.1
+        with:
+          token: ${{ github.token }}
+      - name: Recheck the PR immediately before publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ needs.prepare.outputs.run_id }}
+        run: python3 .github/scripts/publish_emacs.py --run-id "$RUN_ID"
+      - name: Set up Git identity
+        id: git
+        uses: Homebrew/actions/git-user-config@e99025eb970cfa124b8284a35463d87426917478 # 2026.09.28.1
+      # This is the publisher from brew tap-new, scoped to the Emacs workflow.
+      - name: Publish the exact tested source and Homebrew bottles
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ github.token }}
+          HOMEBREW_GIT_COMMITTER_NAME: ${{ steps.git.outputs.name }}
+          HOMEBREW_GIT_COMMITTER_EMAIL: ${{ steps.git.outputs.email }}
+          PULL_REQUEST: ${{ needs.prepare.outputs.pull_request }}
+          HEAD_SHA: ${{ needs.prepare.outputs.head_sha }}
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+          export GITHUB_SHA="$(git rev-parse HEAD)"
+          brew pr-pull --tap=chakachakakhan/tap --workflows=validate-emacs.yml \
+            --head-sha="$HEAD_SHA" "$PULL_REQUEST"
+      - name: Push the published recipes and bottle metadata
+        uses: Homebrew/actions/git-try-push@e99025eb970cfa124b8284a35463d87426917478 # 2026.09.28.1
+        with:
+          branch: main
