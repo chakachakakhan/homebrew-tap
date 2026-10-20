@@ -3,7 +3,27 @@ name: Validate Linux casks
 on:
   push:
     branches: [main]
+    paths:
+      - Casks/chatgpt-linux.rb
+      - Casks/thorium-reader-linux.rb
+      - .github/scripts/*thorium*
+      - .github/scripts/merge_update.py
+      - .github/scripts/test_merge_update.py
+      - .github/workflows/merge-update.yml
+      - .github/workflows/update-thorium.yml
+      - .github/workflows/update.yml
+      - .github/workflows/validate.yml
   pull_request:
+    paths:
+      - Casks/chatgpt-linux.rb
+      - Casks/thorium-reader-linux.rb
+      - .github/scripts/*thorium*
+      - .github/scripts/merge_update.py
+      - .github/scripts/test_merge_update.py
+      - .github/workflows/merge-update.yml
+      - .github/workflows/update-thorium.yml
+      - .github/workflows/update.yml
+      - .github/workflows/validate.yml
   workflow_dispatch:
 
 permissions:
