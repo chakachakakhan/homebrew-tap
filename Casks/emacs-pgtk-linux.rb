@@ -10,8 +10,8 @@ cask "emacs-pgtk-linux" do
   homepage "https://www.gnu.org/software/emacs/"
 
   livecheck do
-    url :homepage
-    regex(/Emacs\s+(\d+\.[1-9]\d*(?:\.\d+)?)/i)
+    url "https://ftp.gnu.org/gnu/emacs/"
+    regex(/href=["']emacs-(\d+\.[1-9]\d*(?:\.\d+)?)\.tar\.xz["']/i)
     strategy :page_match
   end
 

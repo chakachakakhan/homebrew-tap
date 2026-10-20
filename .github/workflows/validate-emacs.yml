@@ -67,7 +67,11 @@ jobs:
           brew readall --aliases --os=all --arch=all chakachakakhan/tap
           brew style Formula/emacs.rb Casks/emacs-pgtk-linux.rb
           brew audit --formula --strict chakachakakhan/tap/emacs
-          brew audit --cask --new --strict chakachakakhan/tap/emacs-pgtk-linux
+          for attempt in 1 2 3; do
+            brew audit --cask --new --strict chakachakakhan/tap/emacs-pgtk-linux && break
+            (( attempt == 3 )) && exit 1
+            sleep 15
+          done
 
       # Homebrew's test-bot builds, bottles, uninstalls, pours the bottle,
       # checks linkage, and runs the formula's real native-compilation test.

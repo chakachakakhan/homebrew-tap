@@ -6,12 +6,6 @@ class Emacs < Formula
   sha256 "1da5790d9580c81932b5bf700633114468da7b3412d69faa767daebf974f4586"
   license "GPL-3.0-or-later"
 
-  livecheck do
-    url :homepage
-    regex(/Emacs\s+(\d+\.[1-9]\d*(?:\.\d+)?)/i)
-    strategy :page_match
-  end
-
   depends_on "pkgconf" => :build
   depends_on "texinfo" => :build
   depends_on "cairo"
