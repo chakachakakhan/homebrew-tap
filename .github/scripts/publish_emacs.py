@@ -13,6 +13,7 @@ from update_emacs import PACKAGES, metadata_only
 
 BRANCH = "automation/update-emacs"
 WORKFLOW = ".github/workflows/validate-emacs.yml"
+PUBLICATION_POLICY = {WORKFLOW}
 REQUIRED_JOBS = {
     "Emacs update policy", "Emacs bottle (ubuntu-24.04)", "Emacs bottle (ubuntu-24.04-arm)",
 }
@@ -57,8 +58,6 @@ def release_candidate(repo, run, request=api, manual_pr=None, expected_sha=None)
     if expected_sha is not None and sha != expected_sha:
         raise ValueError("The PR moved after manual publication was requested")
     comparison = request(f"{prefix}/compare/{pr['base']['sha']}...{sha}")
-    if comparison["merge_base_commit"]["sha"] != pr["base"]["sha"]:
-        raise ValueError("Main changed; refresh the update and rerun validation")
     if automatic:
         if pr["user"]["login"] != "github-actions[bot]" or pr["head"]["ref"] != BRANCH:
             raise ValueError("Automatic publication requires the same-repository update bot")
@@ -67,16 +66,23 @@ def release_candidate(repo, run, request=api, manual_pr=None, expected_sha=None)
                 or {item["filename"] for item in files} != PACKAGES
                 or any(item["status"] != "modified" for item in files)):
             raise ValueError("Automatic updates can modify only the existing Emacs recipes")
-        contents = []
-        for ref in (pr["base"]["sha"], sha):
-            source = {}
-            for path in PACKAGES:
-                item = request(f"{prefix}/contents/{path}?ref={ref}")
-                if item["encoding"] != "base64":
-                    raise ValueError("Unexpected GitHub content encoding")
-                source[path] = base64.b64decode(item["content"]).decode("utf-8")
-            contents.append(source)
-        if not metadata_only(*contents):
+    def source_at(ref):
+        source = {}
+        for path in PACKAGES | PUBLICATION_POLICY:
+            item = request(f"{prefix}/contents/{path}?ref={ref}")
+            if item["encoding"] != "base64":
+                raise ValueError("Unexpected GitHub content encoding")
+            source[path] = base64.b64decode(item["content"]).decode("utf-8")
+        return source
+
+    merge_base = source_at(comparison["merge_base_commit"]["sha"])
+    current_main = source_at(pr["base"]["sha"])
+    if merge_base != current_main:
+        raise ValueError("Emacs recipes or validation policy changed on main; rerun validation")
+    if automatic:
+        pr_head = source_at(sha)
+        if not metadata_only({path: current_main[path] for path in PACKAGES},
+                             {path: pr_head[path] for path in PACKAGES}):
             raise ValueError("Only a newer official source version and matching checksum can publish")
     return {"pull_request": str(pr["number"]), "head_sha": sha, "run_id": str(run["id"])}
 

@@ -58,7 +58,7 @@ jobs:
         run: |
           [[ "$UPDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
           gh workflow run validate-emacs.yml --ref automation/update-emacs
-          for attempt in {1..12}; do
+          for _ in {1..12}; do
             run_id="$(gh api \
               "repos/$GH_REPO/actions/workflows/validate-emacs.yml/runs?event=workflow_dispatch&branch=automation/update-emacs&head_sha=$UPDATE_SHA&per_page=1" \
               --jq '.workflow_runs[0].id // empty')"

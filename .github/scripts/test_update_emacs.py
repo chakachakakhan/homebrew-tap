@@ -34,6 +34,10 @@ class EmacsUpdateTests(unittest.TestCase):
         after = update_packages(self.before, self.new, self.digest)
         self.assertTrue(metadata_only(self.before, after))
         self.assertNotIn("bottle do", after[FORMULA])
+        self.assertIn(f'url "https://ftpmirror.gnu.org/emacs/emacs-{self.new}.tar.xz"',
+                      after[FORMULA])
+        self.assertIn(f'mirror "https://ftp.gnu.org/gnu/emacs/emacs-{self.new}.tar.xz"',
+                      after[FORMULA])
         for path in PACKAGES:
             self.assertEqual(package_version(after[path], path), self.new)
             self.assertIn(self.digest, after[path])

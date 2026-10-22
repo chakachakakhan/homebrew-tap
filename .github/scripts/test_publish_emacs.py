@@ -28,6 +28,10 @@ class EmacsPublicationTests(unittest.TestCase):
         self.artifacts = {"artifacts": [{"name": name, "expired": False} for name in ARTIFACTS]}
         self.comparison = {"merge_base_commit": {"sha": "base"}, "files": [
             {"filename": path, "status": "modified"} for path in PACKAGES]}
+        self.extra_sources = {}
+        self.extra_validation = {}
+        root = Path(__file__).resolve().parents[2]
+        self.validation_workflow = (root / WORKFLOW).read_text()
         self.request = Mock(side_effect=self.respond)
 
     def respond(self, path):
@@ -41,8 +45,13 @@ class EmacsPublicationTests(unittest.TestCase):
             return self.pr
         if "/compare/" in path:
             return self.comparison
-        source = self.before if path.endswith("ref=base") else self.after
+        ref = path.rsplit("ref=", 1)[-1]
+        source = self.extra_sources.get(ref, self.before if ref == "base" else self.after)
         filename = path.split("/contents/")[1].split("?")[0]
+        if filename == WORKFLOW:
+            content = self.extra_validation.get(ref, self.validation_workflow)
+            return {"encoding": "base64",
+                    "content": base64.b64encode(content.encode()).decode()}
         return {"encoding": "base64", "content": base64.b64encode(source[filename].encode()).decode()}
 
     def reject(self, run=None):
@@ -83,6 +92,24 @@ class EmacsPublicationTests(unittest.TestCase):
         self.reject()
         self.pr["head"]["sha"] = self.sha
         self.comparison["merge_base_commit"]["sha"] = "old"
+        self.reject()
+
+    def test_unrelated_main_changes_do_not_force_rebuilding_emacs(self):
+        self.comparison["merge_base_commit"]["sha"] = "old-main"
+        self.pr["base"]["sha"] = "current-main"
+        self.extra_sources["old-main"] = self.before
+        self.extra_sources["current-main"] = self.before.copy()
+        self.assertEqual(release_candidate(self.repo, self.run, self.request)["head_sha"], self.sha)
+
+        self.extra_sources["current-main"][FORMULA] += '\n  # unrelated recipe change\n'
+        self.reject()
+
+    def test_changed_validation_policy_on_main_requires_revalidation(self):
+        self.comparison["merge_base_commit"]["sha"] = "old-main"
+        self.pr["base"]["sha"] = "current-main"
+        self.extra_sources["old-main"] = self.before
+        self.extra_sources["current-main"] = self.before.copy()
+        self.extra_validation["current-main"] = self.validation_workflow + "\n# changed validation policy\n"
         self.reject()
 
     def test_workflow_changes_or_installation_behavior_cannot_publish_automatically(self):

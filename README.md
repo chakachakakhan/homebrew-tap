@@ -1,131 +1,32 @@
-[![Installation checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate.yml)
-[![Update checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update.yml)
-[![Thorium update checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update-thorium.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update-thorium.yml)
-[![OpenCodex checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-opencodex.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-opencodex.yml)
-[![OMP Desktop checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-omp-desktop.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-omp-desktop.yml)
-[![Emacs checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-emacs.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-emacs.yml)
+# My Homebrew tap
 
-this is my personal tap for my homebrew casks, feel free to use it yourself, fork 
-it, whatever, no promise no warranty etc
+[![Install checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate.yml) [![Update checks](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update.yml) [![Thorium](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update-thorium.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/update-thorium.yml)
 
-right now its the chatgpt app by openai, thorium reader by edrlab, opencodex,
-omp desktop, and emacs with pgtk. it takes the
-apps direct from the publisher, turns it into casks, and in theory should update 
-automatically with new updates. we'll see how that goes... 
+[![OpenCodex](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-opencodex.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-opencodex.yml) [![OMP Desktop](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-omp-desktop.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-omp-desktop.yml) [![Emacs](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-emacs.yml/badge.svg?branch=main)](https://github.com/chakachakakhan/homebrew-tap/actions/workflows/validate-emacs.yml)
 
-i vibeslopped the whole project/repo if that bothers you sorry, and then the readme 
-was super slop so i rewrote it by hand, thats what this is. manual slop. i did 
-like the badges so i kept them at the top.
+Hey, this is my personal tap for a few Linux apps I use. No warranty; packages come from their publishers.
 
+| Package | Install | Linux |
+| --- | --- | --- |
+| ChatGPT | `brew install --cask chakachakakhan/tap/chatgpt-linux` | x86_64, ARM64 |
+| Thorium Reader | `brew install --cask chakachakakhan/tap/thorium-reader-linux` | x86_64, ARM64 |
+| OpenCodex desktop | `brew install --cask chakachakakhan/tap/opencodex` | x86_64 |
+| OpenCodex CLI | `brew install --formula chakachakakhan/tap/opencodex` | x86_64, ARM64 |
+| OMP Desktop | `brew install --cask chakachakakhan/tap/omp-desktop` | x86_64 |
+| Emacs desktop integration | `brew install --cask chakachakakhan/tap/emacs-pgtk-linux` | x86_64, ARM64 |
+| Emacs formula | `brew install --formula chakachakakhan/tap/emacs` | x86_64, ARM64 |
 
-## Install and uninstall
+Launch ChatGPT with `chatgpt`, Thorium Reader with `thorium-reader`, and OpenCodex desktop with `opencodex-desktop`. The OpenCodex CLI provides `ocx` and `opencodex`; its dashboard is at `http://localhost:10100`. OMP Desktop needs the separate `omp` engine: install it with `brew install can1357/tap/omp` or use an existing upstream install, then run `omp-desktop /path/to/project`. Emacs's formula provides `emacs`, `emacsclient`, and the optional daemon; the cask adds desktop entries and an icon.
 
-depends on homebrew on linux. both casks support intel/amd (ofc) and arm (why)
-```sh
-brew install --cask chakachakakhan/tap/chatgpt-linux
-brew install --cask chakachakakhan/tap/thorium-reader-linux
-```
+The fully qualified install names let Homebrew trust only the selected package. See [Tap Trust](https://docs.brew.sh/Tap-Trust) before trusting the whole tap.
 
-chatgpt comes with the chatgpt command, desktop launcher, icon, app metadata. homebrew
-installs dpkg to extract the deb package. doesn't come with cli as far as i can tell.
+## Updates and removal
 
-thorium reader installs thorium-reader command, desktop launcer, icon. this isn't 
-thorium web browser. its an ereader for epub and other formats.
+Run `brew update && brew upgrade` to update installed packages. Ordinary uninstall keeps user data. `--zap` removes the cask's listed data: ChatGPT and Codex settings/caches; OpenCodex's `~/.opencodex` (also used by its CLI); OMP Desktop settings, but not the engine's `~/.omp` data; and Thorium Reader's `~/.config/EDRLab.ThoriumReader`, which includes its default library and settings. Check that Thorium folder before using `--zap`.
 
-im using bluefin dakota and it updates homebrew automatically . if ur using another
-ublue flavor like bazzite or aurora it probably functions the same. otherwise
-run 
-```sh
-brew update
-brew upgrade --cask chakachakakhan/tap/chatgpt-linux
-brew upgrade --cask chakachakakhan/tap/thorium-reader-linux
-```
+Emacs's service is optional: `brew services start chakachakakhan/tap/emacs`, then `emacsclient -c` or `emacsclient -t`. Uninstall the cask and formula separately to remove the desktop integration and Emacs itself.
 
-the github actions automation should keep things current and you just run the 
-homebrew updates to keep it updated on your machine.
-
-if you upgrade or uninstall normally, it should preserve all your settings and 
-files, folders, etc. in the default config folders for the respective apps. to
-uninstall its like any other homebrew cask
-```sh
-brew uninstall --cask chakachakakhan/tap/chatgpt-linux
-brew uninstall --cask chakachakakhan/tap/thorium-reader-linux
-```
-
-use `--zap` to remove the data directories listed in the specific cask. for
-thorium that includes its default book library and config. for chatgpt
-it includes chatgpt and codex configs and caches. zap won't hit custom data 
-locations.
-
-## OpenCodex
-
-opencodex is [lidge-jun/opencodex](https://github.com/lidge-jun/opencodex).
-the desktop app works on linux intel/amd.
-the linux appimage is extracted so it doesn't need fuse. upstream doesn't have
-a linux arm desktop build yet.
-
-```sh
-brew install --cask chakachakakhan/tap/opencodex
-```
-
-launch it from the app menu or run `opencodex-desktop`.
-the desktop comes with its own proxy runtime.
-
-if you want the separate cli too, this supports linux on intel/amd and arm:
-
-```sh
-brew install --formula chakachakakhan/tap/opencodex
-ocx init
-ocx start
-```
-
-the cli also has the `opencodex` command. its web dashboard is at
-http://localhost:10100. desktop and cli use the same default opencodex settings.
-
-the tap checks releases every six hours and merges routine updates after the
-install checks pass. no pr merging needed. update your machine through homebrew:
-
-```sh
-brew update
-brew upgrade --cask chakachakakhan/tap/opencodex
-brew upgrade --formula chakachakakhan/tap/opencodex
-```
-
-ordinary uninstall keeps your settings. desktop `--zap` removes the listed
-opencodex data including `~/.opencodex`, which the cli also uses.
-
-## OMP Desktop
-
-omp desktop is [apoc/omp-desktop](https://github.com/apoc/omp-desktop), a gui
-for the oh my pi engine you already have installed. linux intel/amd for now.
-
-```sh
-brew install --cask chakachakakhan/tap/omp-desktop
-```
-
-launch it from the app menu or run `omp-desktop /path/to/project`.
-it uses your installed `omp`, including its provider logins, settings, and sessions.
-if you need the engine too: `brew install can1357/tap/omp`.
-
-the appimage is extracted so it doesn't need fuse. the launcher includes
-homebrew's command path so it can find omp when opened from the app menu.
-updates belong to homebrew for this installation:
-
-```sh
-brew update
-brew upgrade --cask chakachakakhan/tap/omp-desktop
-```
-
-github checks releases every six hours and merges routine updates after the
-install, launch, and update-policy checks pass. no pr merging needed.
-
-ordinary uninstall preserves desktop settings and all omp data.
-`--zap` removes only the desktop's listed settings and caches; it keeps
-`~/.omp`, including the engine's logins, sessions, and named profiles.
-
-```sh
-brew uninstall --cask chakachakakhan/tap/omp-desktop
-```
+See [maintenance notes](docs/maintenance.md) for update automation and checks.
 
 ## Paseo
 
@@ -148,43 +49,4 @@ configuration.
 
 ```sh
 brew uninstall --cask chakachakakhan/tap/paseo-linux
-```
-
-## Emacs
-
-emacs follows stable GNU releases. github builds it from GNU's source as normal
-homebrew bottles for linux intel/amd and arm, with pgtk (native wayland), native
-lisp compilation, tree-sitter, and the cli and daemon.
-
-```sh
-brew install --cask chakachakakhan/tap/emacs-pgtk-linux
-```
-
-the cask adds the app menu entries and icon. it installs the `emacs` formula
-as a dependency, which supplies `emacs`, `emacsclient`, and the other commands.
-for just the formula: `brew install chakachakakhan/tap/emacs`.
-
-to start the daemon at login:
-
-```sh
-brew services start chakachakakhan/tap/emacs
-emacsclient -c
-```
-
-`emacsclient -t` opens a terminal frame. the Emacs (Client) app menu entry uses
-the same daemon. using the service is optional; plain `emacs` also works.
-
-```sh
-brew update
-brew upgrade chakachakakhan/tap/emacs
-brew upgrade --cask chakachakakhan/tap/emacs-pgtk-linux
-```
-
-routine stable updates build, test, and publish automatically. ordinary uninstall
-keeps emacs and doom settings. remove both layers to remove the whole installation:
-
-```sh
-brew services stop chakachakakhan/tap/emacs
-brew uninstall --cask chakachakakhan/tap/emacs-pgtk-linux
-brew uninstall chakachakakhan/tap/emacs
 ```

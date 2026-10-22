@@ -67,11 +67,10 @@ jobs:
           brew readall --aliases --os=all --arch=all chakachakakhan/tap
           brew style Formula/emacs.rb Casks/emacs-pgtk-linux.rb
           brew audit --formula --strict chakachakakhan/tap/emacs
-          for attempt in 1 2 3; do
-            brew audit --cask --new --strict chakachakakhan/tap/emacs-pgtk-linux && break
-            (( attempt == 3 )) && exit 1
-            sleep 15
-          done
+          # GNU homepage checks fail on GitHub runners; Homebrew skips them for formulas too:
+          # https://github.com/Homebrew/homebrew-core/issues/206757
+          brew audit --cask --new --strict --except=homepage_https_availability \
+            chakachakakhan/tap/emacs-pgtk-linux
 
       # Homebrew's test-bot builds, bottles, uninstalls, pours the bottle,
       # checks linkage, and runs the formula's real native-compilation test.
@@ -83,7 +82,14 @@ jobs:
         if: github.event_name != 'push'
         run: |
           brew test-bot --only-formulae --skip-dependents --testing-formulae=chakachakakhan/tap/emacs
-          test -n "$(find . -maxdepth 1 -name 'emacs--*.bottle.tar.gz' -print -quit)"
+          shopt -s nullglob
+          bottles=(emacs--*.bottle*.tar.gz)
+          if (( ${#bottles[@]} != 1 )); then
+            printf 'Expected one tested Emacs bottle, found %s\n' "${#bottles[@]}" >&2
+            exit 1
+          fi
+          brew install --only-dependencies "${bottles[0]}"
+          brew install "${bottles[0]}"
 
       - name: Install the published bottle as a user would
         if: github.event_name == 'push'
@@ -144,7 +150,4 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: emacs-logs_${{ matrix.runner }}
-          path: |
-            ~/.cache/Homebrew/Logs/emacs
-            brew-test-bot-*.txt
-            brew-test-bot-*.xml
+          path: ${{ github.workspace }}/logs/

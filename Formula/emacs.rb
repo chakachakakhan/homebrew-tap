@@ -10,8 +10,12 @@ class Emacs < Formula
   depends_on "texinfo" => :build
   depends_on "cairo"
   depends_on "dbus"
+  depends_on "fontconfig"
+  depends_on "freetype"
   depends_on "gcc"
+  depends_on "gdk-pixbuf"
   depends_on "giflib"
+  depends_on "glib"
   depends_on "gmp"
   depends_on "gnutls"
   depends_on "gtk+3"
@@ -25,6 +29,7 @@ class Emacs < Formula
   depends_on :linux
   depends_on "little-cms2"
   depends_on "ncurses"
+  depends_on "pango"
   depends_on "sqlite"
   depends_on "tree-sitter"
   depends_on "webp"
@@ -90,7 +95,12 @@ class Emacs < Formula
     %w[PGTK NATIVE_COMP TREE_SITTER GNUTLS LIBXML2 MODULES SQLITE3].each do |feature|
       assert_match feature, features
     end
-    assert_match "org.gnu.emacs.defaults", shell_output("#{formula_opt_bin("glib")}/gsettings list-schemas")
+    schema_dir = HOMEBREW_PREFIX/"share/glib-2.0/schemas"
+    assert_path_exists schema_dir/"org.gnu.emacs.defaults.gschema.xml"
+    ENV["GSETTINGS_SCHEMA_DIR"] = schema_dir.to_s
+    gsettings = formula_opt_bin("glib")/"gsettings"
+    # Emacs declares a relocatable schema, so it is listed separately.
+    assert_match "org.gnu.emacs.defaults", shell_output("#{gsettings} list-relocatable-schemas")
 
     # Loading comp alone misses broken compiler/linker lookup after bottling.
     (testpath/"native-test.el").write "(defun tap-native-test () (+ 20 22))\n"
