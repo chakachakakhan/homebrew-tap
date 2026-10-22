@@ -10,16 +10,17 @@ import time
 from pathlib import Path
 
 
-def renderer_sandbox(root_pid):
+def renderer_sandbox(root_pid, proc_root=Path("/proc")):
     parent_map = {}
-    process_args = {}
-    for entry in Path("/proc").iterdir():
+    args_by_pid = {}
+    for entry in proc_root.iterdir():
         if not entry.name.isdecimal():
             continue
         try:
+            pid = int(entry.name)
             fields = (entry / "stat").read_text().rsplit(")", 1)[1].split()
-            parent_map[int(entry.name)] = int(fields[1])
-            process_args[int(entry.name)] = (entry / "cmdline").read_bytes().split(b"\0")
+            parent_map[pid] = int(fields[1])
+            args_by_pid[pid] = (entry / "cmdline").read_bytes().split(b"\0")
         except (OSError, ValueError, IndexError):
             continue
     descendants = {root_pid}
@@ -30,19 +31,36 @@ def renderer_sandbox(root_pid):
             if parent in descendants and pid not in descendants:
                 descendants.add(pid)
                 changed = True
+    scoped_processes = []
+    renderer_without_status = None
     for pid in descendants - {root_pid}:
-        args = process_args.get(pid, [])
-        if b"--type=renderer" not in args:
+        args = args_by_pid.get(pid, [])
+        joined_args = b" ".join(arg for arg in args if arg)
+        options = joined_args.split()
+        args_text = joined_args.decode(errors="replace")
+        scoped_processes.append(f"{pid}: {args_text[:240]}")
+        if b"--type=renderer" not in options:
             continue
-        enabled = b"--enable-sandbox" in args and b"--no-sandbox" not in args
-        status = (Path("/proc") / str(pid) / "status").read_text()
+        enabled = b"--enable-sandbox" in options and b"--no-sandbox" not in options
+        try:
+            status = (proc_root / str(pid) / "status").read_text()
+        except OSError:
+            renderer_without_status = {
+                "pid": pid, "sandbox_flag": enabled,
+                "no_sandbox_flag": b"--no-sandbox" in options,
+                "enforced": False, "status_readable": False,
+                "args": args_text,
+            }
+            continue
         seccomp = re.search(r"^Seccomp:\s+(\d+)$", status, re.MULTILINE)
         no_new_privs = re.search(r"^NoNewPrivs:\s+(\d+)$", status, re.MULTILINE)
         enforced = bool(seccomp and seccomp[1] == "2"
                         and no_new_privs and no_new_privs[1] == "1")
-        return {"pid": pid, "enabled": enabled and enforced,
-                "args": b" ".join(args).decode(errors="replace")}
-    return None
+        return {"pid": pid, "sandbox_flag": enabled,
+                "no_sandbox_flag": b"--no-sandbox" in options,
+                "enforced": enforced,
+                "status_readable": True, "args": args_text}, scoped_processes
+    return renderer_without_status, scoped_processes
 
 
 def stop_group(process):
@@ -104,21 +122,32 @@ def main():
                     raise RuntimeError("Paseo desktop window did not appear within 45 seconds")
                 deadline = time.monotonic() + 3
                 renderer = None
+                test_processes = []
                 while time.monotonic() < deadline:
                     if process.poll() is not None:
                         raise RuntimeError("Paseo desktop exited shortly after opening")
                     windows = subprocess.check_output(["xwininfo", "-root", "-tree"], text=True)
                     if '"Paseo"' not in windows:
                         raise RuntimeError("Paseo desktop window disappeared after opening")
-                    renderer = renderer or renderer_sandbox(process.pid)
+                    current_renderer, current_processes = renderer_sandbox(process.pid)
+                    if current_renderer and (
+                            not renderer or current_renderer["status_readable"]):
+                        renderer = current_renderer
+                    test_processes = current_processes
                     time.sleep(0.5)
                 if not renderer:
-                    raise RuntimeError("Could not find Paseo's renderer process")
-                if renderer["enabled"]:
-                    print(f"Installed Paseo {version}; window stayed open with renderer sandbox active")
-                elif namespace_available:
                     raise RuntimeError(
-                        f"Paseo renderer sandbox is inactive despite a successful user-namespace probe: {renderer['args']}")
+                        "Could not find Paseo's renderer among the desktop process descendants; "
+                        f"matching test processes: {test_processes}")
+                if namespace_available and not renderer["status_readable"]:
+                    raise RuntimeError(
+                        "Found Paseo's renderer but could not read its sandbox status; "
+                        f"renderer process: {renderer['args']}")
+                if renderer["sandbox_flag"] and renderer["enforced"]:
+                    print(f"Installed Paseo {version}; window stayed open with renderer sandbox active")
+                elif namespace_available or not renderer["no_sandbox_flag"]:
+                    raise RuntimeError(
+                        f"Paseo renderer sandbox state did not match the runner probe: {renderer['args']}")
                 else:
                     reason = namespace_probe.stderr.strip() or "user namespace probe was denied"
                     print(f"Paseo {version} window stayed open; runner denied unshare so the upstream sandbox fallback was used: {reason}")
