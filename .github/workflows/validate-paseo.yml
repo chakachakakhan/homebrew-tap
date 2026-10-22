@@ -1,0 +1,139 @@
+name: Validate Paseo
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Casks/paseo-linux.rb
+      - .github/scripts/*paseo*
+      - .github/scripts/merge_update.py
+      - .github/workflows/*paseo*
+  pull_request:
+    paths:
+      - Casks/paseo-linux.rb
+      - .github/scripts/*paseo*
+      - .github/scripts/merge_update.py
+      - .github/workflows/*paseo*
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-paseo-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+jobs:
+  policy:
+    name: Paseo policy tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s .github/scripts -p 'test_*paseo.py' -v
+
+  install:
+    name: Paseo (ubuntu-24.04)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Set up Homebrew and the tap checkout
+        uses: Homebrew/actions/setup-homebrew@848c272c7bfe984a197bd4d16383f4c106ec61e6 # 2026.09.21.1
+
+      - name: Check cask
+        run: |
+          brew readall --aliases --os=all --arch=all chakachakakhan/tap
+          brew style Casks/paseo-linux.rb
+          brew audit --cask --new --strict chakachakakhan/tap/paseo-linux
+
+      - name: Install desktop integration and GUI test tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y desktop-file-utils xvfb x11-utils dbus-x11 libgl1-mesa-dri
+
+      - name: Install and exercise CLI and desktop
+        run: |
+          PASEO_EXPECTED_VERSION="$(sed -nE 's/^  version "([^"]+)"$/\1/p' Casks/paseo-linux.rb)"
+          test -n "$PASEO_EXPECTED_VERSION"
+          export PASEO_EXPECTED_VERSION
+          brew install --cask chakachakakhan/tap/paseo-linux
+          test -x "$(brew --prefix)/bin/paseo"
+          test -x "$(brew --prefix)/bin/paseo-desktop"
+          test -s "$HOME/.local/share/icons/paseo.png"
+          grep -Fx "Exec=$(brew --prefix)/bin/paseo-desktop %U" \
+            "$HOME/.local/share/applications/paseo.desktop"
+          grep -Fx 'MimeType=x-scheme-handler/paseo;' \
+            "$HOME/.local/share/applications/paseo.desktop"
+          desktop-file-validate "$HOME/.local/share/applications/paseo.desktop"
+          awk -F= '$1 == "x-scheme-handler/paseo" { n = split($2, handlers, ";"); for (i = 1; i < n; i++) if (handlers[i] == "paseo.desktop") found = 1 } END { exit !found }' \
+            "$HOME/.local/share/applications/mimeinfo.cache"
+          python3 .github/scripts/verify_paseo_updater.py
+          dbus-run-session -- xvfb-run -a python3 .github/scripts/smoke_paseo.py
+
+      - name: Upgrade from the verified previous release and preserve sessions
+        run: |
+          mkdir -p "$HOME/.paseo/worktrees/sessions"
+          printf 'tap-ci-preserve\n' > "$HOME/.paseo/worktrees/sessions/tap-ci-preserve"
+          current_version="$(sed -nE 's/^  version "([^"]+)"$/\1/p' Casks/paseo-linux.rb)"
+          brew uninstall --cask chakachakakhan/tap/paseo-linux
+          current_cask="$(mktemp)"
+          cp Casks/paseo-linux.rb "$current_cask"
+          restore_cask() {
+            cp "$current_cask" Casks/paseo-linux.rb
+            rm -f "$current_cask"
+          }
+          trap restore_cask EXIT
+          # Official getpaseo/paseo v0.11.4 release API asset digest.
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path("Casks/paseo-linux.rb")
+          content = path.read_text()
+          content, version_count = re.subn(r'^  version "[^"]+"$', '  version "0.11.4"', content, count=1, flags=re.MULTILINE)
+          content, checksum_count = re.subn(r'^  sha256 "[0-9a-f]{64}"$', '  sha256 "91f4e9d031aefadfeda83caf4aff42e958fdb7101202067f6782df6f23476462"', content, count=1, flags=re.MULTILINE)
+          # v0.11.4 packaged its icon under app-dist; later releases use resources/icon.png.
+          content, icon_count = re.subn(r'Paseo-\{\{version\}\}-x64/resources/icon\.png', 'Paseo-{{version}}-x64/resources/app-dist/pwa-icon-512.png', content, count=1)
+          if version_count != 1 or checksum_count != 1 or icon_count != 1:
+              raise SystemExit("Could not prepare the verified v0.11.4 cask fixture")
+          path.write_text(content)
+          PY
+          brew install --cask chakachakakhan/tap/paseo-linux
+          brew list --cask --versions paseo-linux | grep -Fx 'paseo-linux 0.11.4'
+          restore_cask
+          trap - EXIT
+          brew upgrade --cask chakachakakhan/tap/paseo-linux
+          brew list --cask --versions paseo-linux | grep -Fx "paseo-linux $current_version"
+          test -f "$HOME/.paseo/worktrees/sessions/tap-ci-preserve"
+          test -x "$(brew --prefix)/bin/paseo"
+          test -x "$(brew --prefix)/bin/paseo-desktop"
+          test -s "$HOME/.local/share/icons/paseo.png"
+          grep -Fx "Exec=$(brew --prefix)/bin/paseo-desktop %U" \
+            "$HOME/.local/share/applications/paseo.desktop"
+          grep -Fx 'MimeType=x-scheme-handler/paseo;' \
+            "$HOME/.local/share/applications/paseo.desktop"
+          desktop-file-validate "$HOME/.local/share/applications/paseo.desktop"
+          awk -F= '$1 == "x-scheme-handler/paseo" { n = split($2, handlers, ";"); for (i = 1; i < n; i++) if (handlers[i] == "paseo.desktop") found = 1 } END { exit !found }' \
+            "$HOME/.local/share/applications/mimeinfo.cache"
+
+      - name: Check uninstall and preserve user sessions
+        run: |
+          brew uninstall --cask chakachakakhan/tap/paseo-linux
+          for command in paseo paseo-desktop; do
+            test ! -e "$(brew --prefix)/bin/$command"
+            test ! -L "$(brew --prefix)/bin/$command"
+          done
+          test ! -e "$HOME/.local/share/applications/paseo.desktop"
+          test ! -e "$HOME/.local/share/icons/paseo.png"
+          if [[ -f "$HOME/.local/share/applications/mimeinfo.cache" ]]; then
+            awk -F= '$1 == "x-scheme-handler/paseo" { n = split($2, handlers, ";"); for (i = 1; i < n; i++) if (handlers[i] == "paseo.desktop") found = 1 } END { exit found }' \
+              "$HOME/.local/share/applications/mimeinfo.cache"
+          fi
+          test -f "$HOME/.paseo/worktrees/sessions/tap-ci-preserve"

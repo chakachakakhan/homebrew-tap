@@ -127,6 +127,29 @@ ordinary uninstall preserves desktop settings and all omp data.
 brew uninstall --cask chakachakakhan/tap/omp-desktop
 ```
 
+## Paseo
+
+Paseo is a desktop app and CLI for managing AI coding agents. The cask supports
+Linux on x86_64 and installs `paseo-desktop`, `paseo`, an application-menu
+entry, and the `paseo://` URL handler.
+
+```sh
+brew install --cask chakachakakhan/tap/paseo-linux
+```
+
+Updates come through Homebrew:
+
+```sh
+brew upgrade --cask chakachakakhan/tap/paseo-linux
+```
+
+Uninstalling the cask preserves `~/.paseo`, including agents, worktrees, and
+configuration.
+
+```sh
+brew uninstall --cask chakachakakhan/tap/paseo-linux
+```
+
 ## Emacs
 
 emacs follows stable GNU releases. github builds it from GNU's source as normal
