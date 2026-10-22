@@ -106,11 +106,11 @@ jobs:
           path.write_text(content)
           PY
           brew install --cask chakachakakhan/tap/paseo-linux
-          brew list --cask --versions chakachakakhan/tap/paseo-linux | grep -Fx 'paseo-linux 0.11.4'
+          brew list --cask --versions paseo-linux | grep -Fx 'paseo-linux 0.11.4'
           restore_cask
           trap - EXIT
           brew upgrade --cask chakachakakhan/tap/paseo-linux
-          brew list --cask --versions chakachakakhan/tap/paseo-linux | grep -Fx "paseo-linux $current_version"
+          brew list --cask --versions paseo-linux | grep -Fx "paseo-linux $current_version"
           test -f "$HOME/.paseo/worktrees/sessions/tap-ci-preserve"
           test -x "$(brew --prefix)/bin/paseo"
           test -x "$(brew --prefix)/bin/paseo-desktop"
