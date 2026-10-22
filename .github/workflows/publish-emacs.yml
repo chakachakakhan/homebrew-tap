@@ -63,7 +63,9 @@ jobs:
       group: update-casks
       cancel-in-progress: false
     permissions:
-      actions: read
+      # GITHUB_TOKEN pushes do not trigger push workflows; explicitly run the
+      # published-bottle consumer checks on main after publication.
+      actions: write
       checks: read
       contents: write
       pull-requests: write
@@ -101,3 +103,8 @@ jobs:
         uses: Homebrew/actions/git-try-push@e99025eb970cfa124b8284a35463d87426917478 # 2026.09.28.1
         with:
           branch: main
+      - name: Validate the published bottle on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run validate-emacs.yml --repo "$GH_REPO" --ref main --field published=true

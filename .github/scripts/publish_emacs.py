@@ -15,9 +15,38 @@ BRANCH = "automation/update-emacs"
 WORKFLOW = ".github/workflows/validate-emacs.yml"
 PUBLICATION_POLICY = {WORKFLOW}
 REQUIRED_JOBS = {
-    "Emacs update policy", "Emacs bottle (ubuntu-24.04)", "Emacs bottle (ubuntu-24.04-arm)",
+    "Emacs update policy",
+    "Emacs bottle build (ubuntu-24.04)",
+    "Emacs bottle build (ubuntu-24.04-arm)",
+    "Emacs runtime (ubuntu-24.04)",
+    "Emacs runtime (ubuntu-24.04-arm)",
 }
 ARTIFACTS = {"bottles_ubuntu-24.04", "bottles_ubuntu-24.04-arm"}
+
+
+def latest_jobs(run_id, repo, request=api):
+    """Use the latest attempt of every expected job, including partial reruns."""
+    result = request(f"repos/{repo}/actions/runs/{run_id}/jobs?filter=all&per_page=100")
+    jobs = result.get("jobs", [])
+    if result.get("total_count") != len(jobs):
+        raise ValueError("Could not inspect every validation job attempt")
+    latest = {}
+    for job in jobs:
+        name = job.get("name")
+        if name not in REQUIRED_JOBS:
+            raise ValueError("Unexpected job in Emacs validation")
+        attempt = job.get("run_attempt")
+        job_id = job.get("id")
+        if type(attempt) is not int or type(job_id) is not int:
+            raise ValueError("Validation job attempt metadata is incomplete")
+        previous = latest.get(name)
+        if previous is None or (attempt, job_id) > (previous["run_attempt"], previous["id"]):
+            latest[name] = job
+    if set(latest) != REQUIRED_JOBS or any(
+        job.get("conclusion") != "success" for job in latest.values()
+    ):
+        raise ValueError("Both bottle builds, runtime checks, and update policy checks must pass")
+    return latest
 
 
 def release_candidate(repo, run, request=api, manual_pr=None, expected_sha=None):
@@ -30,13 +59,11 @@ def release_candidate(repo, run, request=api, manual_pr=None, expected_sha=None)
     if run["event"] not in ("pull_request", "workflow_dispatch"):
         raise ValueError("Unexpected validation event")
     prefix = f"repos/{repo}"
-    jobs = request(f"{prefix}/actions/runs/{run['id']}/jobs?filter=latest&per_page=100")
-    if jobs["total_count"] != len(REQUIRED_JOBS) or {
-        job["name"] for job in jobs["jobs"] if job["conclusion"] == "success"
-    } != REQUIRED_JOBS:
-        raise ValueError("Both complete bottle installations and update policy checks must pass")
+    latest_jobs(run["id"], repo, request)
     artifacts = request(f"{prefix}/actions/runs/{run['id']}/artifacts?per_page=100")
-    names = [item["name"] for item in artifacts["artifacts"] if not item["expired"]]
+    names = [item["name"] for item in artifacts["artifacts"]
+             if not item["expired"] and (item["name"] == "bottles"
+                                          or item["name"].startswith("bottles_"))]
     if len(names) != len(ARTIFACTS) or set(names) != ARTIFACTS:
         raise ValueError("Both tested Linux bottles must be available")
 

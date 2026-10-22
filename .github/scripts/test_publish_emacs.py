@@ -23,8 +23,9 @@ class EmacsPublicationTests(unittest.TestCase):
                    "user": {"login": "github-actions[bot]"},
                    "head": {"repo": {"full_name": self.repo}, "ref": BRANCH, "sha": self.sha},
                    "base": {"repo": {"full_name": self.repo}, "ref": "main", "sha": "base"}}
-        self.jobs = {"total_count": 3, "jobs": [
-            {"name": name, "conclusion": "success"} for name in REQUIRED_JOBS]}
+        self.jobs = {"total_count": len(REQUIRED_JOBS), "jobs": [
+            {"name": name, "conclusion": "success", "run_attempt": 1, "id": index}
+            for index, name in enumerate(REQUIRED_JOBS, start=1)]}
         self.artifacts = {"artifacts": [{"name": name, "expired": False} for name in ARTIFACTS]}
         self.comparison = {"merge_base_commit": {"sha": "base"}, "files": [
             {"filename": path, "status": "modified"} for path in PACKAGES]}
@@ -70,6 +71,42 @@ class EmacsPublicationTests(unittest.TestCase):
         self.jobs["jobs"][0]["conclusion"] = "skipped"
         self.reject()
 
+    def test_both_runtime_jobs_must_succeed(self):
+        arm_runtime = next(job for job in self.jobs["jobs"]
+                           if job["name"] == "Emacs runtime (ubuntu-24.04-arm)")
+        arm_runtime["conclusion"] = "failure"
+        self.reject()
+        arm_runtime["conclusion"] = "success"
+        self.jobs["jobs"].remove(arm_runtime)
+        self.jobs["total_count"] -= 1
+        self.reject()
+
+    def test_partial_rerun_uses_latest_attempt_for_each_job(self):
+        arm_runtime = next(job for job in self.jobs["jobs"]
+                           if job["name"] == "Emacs runtime (ubuntu-24.04-arm)")
+        arm_runtime["conclusion"] = "failure"
+        self.jobs["jobs"].append(arm_runtime | {
+            "conclusion": "success", "run_attempt": 2, "id": 100,
+        })
+        self.jobs["total_count"] += 1
+        self.assertEqual(release_candidate(self.repo, self.run, self.request)["head_sha"], self.sha)
+
+        arm_runtime["conclusion"] = "success"
+        self.jobs["jobs"][-1]["conclusion"] = "failure"
+        self.reject()
+
+    def test_unexpected_validation_job_fails_closed(self):
+        self.jobs["jobs"].append({"name": "unexpected", "conclusion": "success",
+                                  "run_attempt": 1, "id": 100})
+        self.jobs["total_count"] += 1
+        self.reject()
+
+    def test_both_bottle_builds_must_succeed_for_publication(self):
+        arm_build = next(job for job in self.jobs["jobs"]
+                         if job["name"] == "Emacs bottle build (ubuntu-24.04-arm)")
+        arm_build["conclusion"] = "skipped"
+        self.reject()
+
     def test_wrong_event_branch_workflow_or_fork_cannot_publish(self):
         for key, value in (("event", "pull_request"), ("head_branch", "feature"),
                            ("path", ".github/workflows/validate.yml"),
@@ -85,6 +122,17 @@ class EmacsPublicationTests(unittest.TestCase):
         self.reject()
         self.artifacts = copy.deepcopy(saved)
         self.artifacts["artifacts"].append(self.artifacts["artifacts"][0])
+        self.reject()
+
+    def test_diagnostic_artifacts_do_not_block_publication(self):
+        self.artifacts["artifacts"].extend([
+            {"name": "emacs-logs_ubuntu-24.04", "expired": False},
+            {"name": "emacs-logs_ubuntu-24.04-arm", "expired": False},
+        ])
+        self.assertEqual(release_candidate(self.repo, self.run, self.request)["head_sha"], self.sha)
+
+    def test_unexpected_bottle_artifacts_fail_closed(self):
+        self.artifacts["artifacts"].append({"name": "bottles_unexpected", "expired": False})
         self.reject()
 
     def test_stale_head_or_main_cannot_publish(self):
