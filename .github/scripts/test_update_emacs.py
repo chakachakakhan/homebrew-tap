@@ -25,7 +25,8 @@ class EmacsUpdateTests(unittest.TestCase):
             latest_release('<a href="emacs-32.0.90.tar.xz">a</a>')
 
     def test_both_sources_advance_together_and_old_bottle_is_removed(self):
-        self.before[FORMULA] = self.before[FORMULA].replace('  depends_on "pkgconf"', '''  bottle do
+        if "  bottle do\n" not in self.before[FORMULA]:
+            self.before[FORMULA] = self.before[FORMULA].replace('  depends_on "pkgconf"', '''  bottle do
     root_url "https://github.com/owner/tap/releases/download/old"
     sha256 x86_64_linux: "bottle-sha"
   end
