@@ -87,7 +87,6 @@ jobs:
           brew audit --formula --strict chakachakakhan/tap/emacs
           # Check this package, independently of GNU's homepage/release index.
           brew audit --cask --strict chakachakakhan/tap/emacs-pgtk-linux
-          brew fetch --cask chakachakakhan/tap/emacs-pgtk-linux
 
       # Homebrew's test-bot builds, bottles, pours the bottle, checks linkage,
       # and runs the formula's real native-compilation test.

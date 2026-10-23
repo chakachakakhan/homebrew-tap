@@ -101,6 +101,15 @@ class EmacsPublicationTests(unittest.TestCase):
         self.jobs["total_count"] += 1
         self.reject()
 
+    def test_skipped_matrix_placeholder_does_not_block_a_successful_retry(self):
+        placeholder = {"name": "Emacs runtime (${{ matrix.runner }})",
+                       "conclusion": "skipped", "run_attempt": 1, "id": 100}
+        self.jobs["jobs"].append(placeholder)
+        self.jobs["total_count"] += 1
+        self.assertEqual(release_candidate(self.repo, self.run, self.request)["head_sha"], self.sha)
+        placeholder["conclusion"] = "failure"
+        self.reject()
+
     def test_both_bottle_builds_must_succeed_for_publication(self):
         arm_build = next(job for job in self.jobs["jobs"]
                          if job["name"] == "Emacs bottle build (ubuntu-24.04-arm)")

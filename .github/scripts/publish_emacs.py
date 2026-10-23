@@ -33,6 +33,9 @@ def latest_jobs(run_id, repo, request=api):
     latest = {}
     for job in jobs:
         name = job.get("name")
+        # GitHub leaves an unexpanded matrix placeholder after skipped attempts.
+        if name == "Emacs runtime (${{ matrix.runner }})" and job.get("conclusion") == "skipped":
+            continue
         if name not in REQUIRED_JOBS:
             raise ValueError("Unexpected job in Emacs validation")
         attempt = job.get("run_attempt")
