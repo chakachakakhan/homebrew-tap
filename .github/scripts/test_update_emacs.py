@@ -25,16 +25,17 @@ class EmacsUpdateTests(unittest.TestCase):
             latest_release('<a href="emacs-32.0.90.tar.xz">a</a>')
 
     def test_both_sources_advance_together_and_old_bottle_is_removed(self):
-        self.before[FORMULA] = self.before[FORMULA].replace("  livecheck do", '''  bottle do
+        self.before[FORMULA] = self.before[FORMULA].replace('  depends_on "pkgconf"', '''  bottle do
     root_url "https://github.com/owner/tap/releases/download/old"
     sha256 x86_64_linux: "bottle-sha"
   end
 
-  livecheck do''', 1)
+  depends_on "pkgconf"''', 1)
+        self.assertIn("  bottle do\n", self.before[FORMULA])
         after = update_packages(self.before, self.new, self.digest)
         self.assertTrue(metadata_only(self.before, after))
         self.assertNotIn("bottle do", after[FORMULA])
-        self.assertIn(f'url "https://ftpmirror.gnu.org/emacs/emacs-{self.new}.tar.xz"',
+        self.assertIn(f'url "https://mirrors.kernel.org/gnu/emacs/emacs-{self.new}.tar.xz"',
                       after[FORMULA])
         self.assertIn(f'mirror "https://ftp.gnu.org/gnu/emacs/emacs-{self.new}.tar.xz"',
                       after[FORMULA])
@@ -66,7 +67,7 @@ class EmacsUpdateTests(unittest.TestCase):
             {CASK: self.before[CASK].replace(f'version "{self.old}"', 'version "99.1"')},
             {CASK: re.sub(r'^  sha256 "[0-9a-f]{64}"', f'  sha256 "{self.digest}"',
                          self.before[CASK], flags=re.M)},
-            {FORMULA: self.before[FORMULA].replace("ftpmirror.gnu.org", "example.com")},
+            {FORMULA: self.before[FORMULA].replace("mirrors.kernel.org", "example.com")},
             {FORMULA: self.before[FORMULA] + '\n  sha256 "' + self.digest + '"\n'},
         ):
             with self.assertRaises(ValueError):

@@ -11,7 +11,8 @@ CASK = "Casks/emacs-pgtk-linux.rb"
 PACKAGES = {FORMULA, CASK}
 GNU = "https://ftp.gnu.org/gnu/emacs/"
 VERSION = r"\d+\.[1-9]\d*(?:\.\d+)?"
-FORMULA_URL = rf'^  url "https://ftpmirror\.gnu\.org/emacs/emacs-({VERSION})\.tar\.xz"$'
+SOURCE = "https://mirrors.kernel.org/gnu/emacs/"
+FORMULA_URL = rf'^  url "{re.escape(SOURCE)}emacs-({VERSION})\.tar\.xz"$'
 CASK_VERSION = rf'^  version "({VERSION})"$'
 CHECKSUM = r'^  sha256 "([0-9a-f]{64})"$'
 BOTTLE = r'^  bottle do\n(?:(?!^  end$).)*^  end\n\n'
@@ -76,7 +77,7 @@ def update_packages(originals, version, digest):
             if content.count(mirror) != 1:
                 raise ValueError("Expected the matching official GNU mirror")
             content = re.sub(FORMULA_URL,
-                             f'  url "https://ftpmirror.gnu.org/emacs/emacs-{version}.tar.xz"',
+                             f'  url "{SOURCE}emacs-{version}.tar.xz"',
                              content, flags=re.MULTILINE)
             content = content.replace(mirror, f'  mirror "{GNU}emacs-{version}.tar.xz"')
         else:

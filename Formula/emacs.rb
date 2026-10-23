@@ -1,7 +1,7 @@
 class Emacs < Formula
   desc "GNU Emacs with native Wayland, native compilation, and tree-sitter"
   homepage "https://www.gnu.org/software/emacs/"
-  url "https://ftpmirror.gnu.org/emacs/emacs-31.1.tar.xz"
+  url "https://mirrors.kernel.org/gnu/emacs/emacs-31.1.tar.xz"
   mirror "https://ftp.gnu.org/gnu/emacs/emacs-31.1.tar.xz"
   sha256 "1da5790d9580c81932b5bf700633114468da7b3412d69faa767daebf974f4586"
   license "GPL-3.0-or-later"

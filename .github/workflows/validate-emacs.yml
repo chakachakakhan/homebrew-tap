@@ -93,7 +93,9 @@ jobs:
       - run: brew test-bot --only-setup
       - name: Build and test the bottle
         run: |
-          brew test-bot --only-formulae --skip-dependents --testing-formulae=chakachakakhan/tap/emacs
+          # Source downloads already verify SHA-256; a mirror availability audit
+          # must not discard a successfully built and tested bottle.
+          brew test-bot --only-formulae --skip-dependents --skip-online-checks --testing-formulae=chakachakakhan/tap/emacs
           shopt -s nullglob
           bottles=(emacs--*.bottle*.tar.gz)
           if (( ${#bottles[@]} != 1 )); then
