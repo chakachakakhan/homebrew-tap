@@ -82,10 +82,8 @@ jobs:
           brew readall --aliases --os=all --arch=all chakachakakhan/tap
           brew style Formula/emacs.rb Casks/emacs-pgtk-linux.rb
           brew audit --formula --strict chakachakakhan/tap/emacs
-          # GNU homepage checks fail on GitHub runners; Homebrew skips them for formulas too:
-          # https://github.com/Homebrew/homebrew-core/issues/206757
-          brew audit --cask --new --strict --except=homepage_https_availability \
-            chakachakakhan/tap/emacs-pgtk-linux
+          # Check this package, independently of GNU's homepage/release index.
+          brew audit --cask --strict --download chakachakakhan/tap/emacs-pgtk-linux
 
       # Homebrew's test-bot builds, bottles, pours the bottle, checks linkage,
       # and runs the formula's real native-compilation test.
