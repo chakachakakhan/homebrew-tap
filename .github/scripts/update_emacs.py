@@ -110,7 +110,7 @@ def download(url, destination=None):
 
 def main():
     originals = {path: Path(path).read_text() for path in PACKAGES}
-    version = latest_release(download(GNU))
+    version = latest_release(download(SOURCE))
     current = package_version(originals[FORMULA], FORMULA)
     if version_tuple(version) < version_tuple(current):
         raise ValueError("GNU's index is older than the installed tap metadata")
@@ -121,7 +121,7 @@ def main():
         return
     with tempfile.TemporaryDirectory(prefix="emacs-upstream-") as directory:
         archive = Path(directory) / f"emacs-{version}.tar.xz"
-        download(f"{GNU}{archive.name}", archive)
+        download(f"{SOURCE}{archive.name}", archive)
         with archive.open("rb") as stream:
             digest = hashlib.file_digest(stream, "sha256").hexdigest()
     updated = update_packages(originals, version, digest)

@@ -17,7 +17,7 @@ Ordinary uninstall keeps user data. Use `--zap` only when you want the cask's li
 
 ## Maintaining the tap
 
-App updates check every six hours; Emacs checks GNU stable releases daily. Validated updates publish automatically. Disable the relevant merge/publish workflow to pause them.
+App updates check every six hours; Emacs checks stable releases on GNU's kernel.org mirror daily. Validated updates publish automatically. Disable the relevant merge/publish workflow to pause them.
 
 Emacs builds and tests x86_64 and ARM64 bottles before publication with `brew pr-pull`. For the first release or a packaging fix, run **Publish tested Emacs bottles** with the PR number and exact head SHA after **Validate Emacs** passes. Publication then checks the installed bottles on `main`.
 
