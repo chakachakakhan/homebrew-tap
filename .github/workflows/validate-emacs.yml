@@ -157,6 +157,9 @@ jobs:
 
       - name: Install the tested local bottle
         if: github.event_name != 'push' && inputs.published != true
+        env:
+          # Homebrew 7 permits local bottle files only in developer mode.
+          HOMEBREW_DEVELOPER: "1"
         run: |
           shopt -s nullglob
           bottles=("$RUNNER_TEMP"/emacs-bottle/emacs--*.bottle*.tar.gz)
