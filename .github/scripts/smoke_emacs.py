@@ -114,13 +114,17 @@ def main():
                     env.pop("WAYLAND_DISPLAY", None)
 
                 ready = root / "gui-ready"
+                # GTK may map a Wayland frame after command-line evaluation.
                 form = (
-                    "(unless (and (eq window-system 'pgtk) (frame-visible-p)) "
-                    '(error "No visible PGTK frame")) '
-                    f'(write-region "ready" nil {json.dumps(str(ready))} nil \'silent)'
+                    "(unless (eq window-system 'pgtk) (error \"Not a PGTK frame\")) "
+                    "(run-at-time 0.1 0.1 (lambda () "
+                    "(when (frame-visible-p (selected-frame)) "
+                    f'(write-region "ready" nil {json.dumps(str(ready))} nil \'silent))))'
                 )
                 gui = subprocess.Popen(
-                    [str(emacs), "-Q", "--eval", f"(progn {form})"],
+                    [str(emacs), "-Q", "--eval",
+                     f"(condition-case err (progn {form}) "
+                     "(error (print err 'external-debugging-output) (kill-emacs 1)))"],
                     env=env, stdout=log, stderr=log,
                 )
                 processes.append(gui)

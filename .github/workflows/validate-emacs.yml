@@ -25,6 +25,9 @@ on:
         description: Test the already-published bottle on main
         type: boolean
         default: false
+      bottle_run_id:
+        description: Retry with tested bottles from an earlier run (identical formula; owner only)
+        type: string
 
 permissions: {}
 
@@ -90,12 +93,51 @@ jobs:
       # and runs the formula's real native-compilation test.
       - run: brew test-bot --only-cleanup-before
       - run: brew test-bot --only-setup
-      - name: Build and test the bottle
+
+      - name: Verify the requested bottle retry
+        if: inputs.bottle_run_id
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BOTTLE_RUN_ID: ${{ inputs.bottle_run_id }}
         run: |
-          # Source downloads already verify SHA-256; a mirror availability audit
-          # must not discard a successfully built and tested bottle.
-          brew test-bot --only-formulae --skip-dependents --skip-online-checks --testing-formulae=chakachakakhan/tap/emacs
+          [[ "$GITHUB_ACTOR" == "$GITHUB_REPOSITORY_OWNER" ]]
+          [[ "$BOTTLE_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          origin="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BOTTLE_RUN_ID" \
+            --jq '[.head_repository.full_name, .path] | join(" ")')"
+          [[ "$origin" == "$GITHUB_REPOSITORY .github/workflows/validate-emacs.yml" ]]
+          builds="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BOTTLE_RUN_ID/jobs?filter=latest&per_page=100" \
+            --jq '[.jobs[] | select(.name == "Emacs bottle build (ubuntu-24.04)" or .name == "Emacs bottle build (ubuntu-24.04-arm)") | .conclusion] | sort | join(" ")')"
+          [[ "$builds" == 'success success' ]]
+
+      - name: Download the previously tested bottle
+        if: inputs.bottle_run_id
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.bottle_run_id }}
+          name: bottles_${{ matrix.runner }}
+          path: ${{ runner.temp }}/emacs-retry
+
+      - name: Build and test the bottle
+        env:
+          BOTTLE_RUN_ID: ${{ inputs.bottle_run_id }}
+        run: |
           shopt -s nullglob
+          if [[ -n "$BOTTLE_RUN_ID" ]]; then
+            bottles=("$RUNNER_TEMP"/emacs-retry/emacs--*.bottle*.tar.gz)
+            (( ${#bottles[@]} == 1 ))
+            # Reuse only the exact recipe embedded in the previously tested binary.
+            tar --extract --to-stdout --file "${bottles[0]}" --wildcards 'emacs/*/.brew/emacs.rb' \
+              | cmp Formula/emacs.rb -
+            HOMEBREW_DEVELOPER=1 brew install --only-dependencies "${bottles[0]}"
+            HOMEBREW_DEVELOPER=1 brew install "${bottles[0]}"
+            brew test chakachakakhan/tap/emacs
+            brew linkage --test --strict chakachakakhan/tap/emacs
+            cp -- "$RUNNER_TEMP"/emacs-retry/emacs--*.bottle.json "${bottles[0]}" .
+          else
+            # Downloads verify SHA-256; mirror availability must not discard a tested bottle.
+            brew test-bot --only-formulae --skip-dependents --skip-online-checks --testing-formulae=chakachakakhan/tap/emacs
+          fi
           bottles=(emacs--*.bottle*.tar.gz)
           if (( ${#bottles[@]} != 1 )); then
             printf 'Expected one tested Emacs bottle, found %s\n' "${#bottles[@]}" >&2
