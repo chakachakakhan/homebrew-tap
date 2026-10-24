@@ -2,7 +2,7 @@ name: Update Paseo cask
 
 on:
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: "57 15 * * 0"
   workflow_dispatch:
 
 permissions: {}

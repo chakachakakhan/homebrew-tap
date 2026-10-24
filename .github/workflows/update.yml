@@ -1,11 +1,8 @@
 name: Update ChatGPT cask
 
 on:
-  push:
-    branches: [main]
-    paths: [.github/workflows/update.yml]
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: "17 15 * * 0"
   workflow_dispatch:
 
 permissions: {}
