@@ -103,6 +103,21 @@ jobs:
         uses: Homebrew/actions/git-try-push@e99025eb970cfa124b8284a35463d87426917478 # 2026.09.28.1
         with:
           branch: main
+      - name: Associate the release with its published Emacs commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          emacs_info="$(brew info --json=v2 --formula chakachakakhan/tap/emacs)"
+          emacs_tag="$(jq -er '.formulae[0].bottle.stable.root_url | split("/") | last' <<< "$emacs_info")"
+          emacs_version="$(jq -er '.formulae[0].versions.stable' <<< "$emacs_info")"
+          emacs_tag_sha="$(gh api "repos/$GH_REPO/git/ref/tags/$emacs_tag" --jq '.object.sha')"
+          git push origin "HEAD:refs/tags/$emacs_tag" \
+            --force-with-lease="refs/tags/$emacs_tag:$emacs_tag_sha"
+          printf 'GNU Emacs %s bottles for Linux x86_64 and ARM64, with PGTK/Wayland, native compilation, and tree-sitter.\n' \
+            "$emacs_version" > "$RUNNER_TEMP/emacs-release-notes.md"
+          gh release edit "$emacs_tag" --repo "$GH_REPO" \
+            --title "Emacs $emacs_version (Linux)" --notes-file "$RUNNER_TEMP/emacs-release-notes.md"
       - name: Validate the published bottle on main
         env:
           GH_TOKEN: ${{ github.token }}
